@@ -449,7 +449,8 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
             st.rerun()
     st.caption(
         "Bấm một vùng để lọc KPI và các biểu đồ trên Trang 1. "
-        "Màu đậm hơn = tỷ lệ trượt cao hơn; tooltip cho biết tỷ lệ và cỡ mẫu N."
+        "Màu đậm hơn = tỷ lệ trượt cao hơn; tooltip cho biết tỷ lệ và cỡ mẫu N. "
+        "⚠️ **Lưu ý Ngụy biện sinh thái:** Bản đồ chỉ thể hiện số liệu trung bình, tuyệt đối không suy diễn thành xác suất trượt của cá nhân dựa trên vùng cư trú."
     )
 
 
@@ -989,7 +990,7 @@ def render_overview_page() -> None:
                 EDUCATION_LABELS,
             ),
             comparison_message(base, "region", "Vùng cư trú")
-            + " Bản đồ giúp xác định nơi chênh lệch tập trung để đối chiếu thêm với điều kiện kinh tế–xã hội.",
+            + " <b>Nghịch lý địa lý:</b> Sự chênh lệch này đi cùng với khác biệt về kinh tế-xã hội (IMD) và học vấn đầu vào, không phải do vùng địa lý trực tiếp gây ra. Địa lý chỉ đóng vai trò là bối cảnh.",
         ],
     )
 
