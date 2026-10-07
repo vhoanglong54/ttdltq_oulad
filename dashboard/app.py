@@ -564,7 +564,7 @@ def render_vle_timeline(
             "highest_education",
             "imd_band",
             "region",
-            "At_Risk",
+            "final_result",
             "date",
             "sum_click",
         ),
@@ -573,8 +573,12 @@ def render_vle_timeline(
         daily, genders, age_bands, education_levels, imd_bands, regions
     )
     daily = daily.loc[daily["date"].le(105)].copy()
-    totals = frame.groupby("At_Risk").size().rename("attempts")
-    daily = daily.groupby(["At_Risk", "date"], as_index=False)["sum_click"].sum()
+    daily["Nhóm"] = daily["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Không hoàn thành")
+    totals = frame.copy()
+    totals["Nhóm"] = totals["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Không hoàn thành")
+    totals = totals.groupby("Nhóm").size().rename("attempts")
+    
+    daily = daily.groupby(["Nhóm", "date"], as_index=False)["sum_click"].sum()
     if daily.empty:
         st.info("Không có sự kiện VLE trong phạm vi lọc.")
         return float("nan"), float("nan")
@@ -582,19 +586,14 @@ def render_vle_timeline(
     dates = np.arange(int(daily["date"].min()), int(daily["date"].max()) + 1)
     statuses = sorted(totals.index.tolist())
     grid = pd.MultiIndex.from_product(
-        [statuses, dates], names=["At_Risk", "date"]
+        [statuses, dates], names=["Nhóm", "date"]
     ).to_frame(index=False)
-    daily = grid.merge(daily, on=["At_Risk", "date"], how="left").fillna(
-        {"sum_click": 0}
-    )
-    daily = daily.merge(totals, on="At_Risk", how="left")
+    daily = grid.merge(daily, on=["Nhóm", "date"], how="left").fillna({"sum_click": 0})
+    daily = daily.merge(totals, on="Nhóm", how="left")
     daily["avg_sum_click"] = daily["sum_click"] / daily["attempts"]
-    daily = daily.sort_values(["At_Risk", "date"])
-    daily["avg_click_7d"] = daily.groupby("At_Risk")["avg_sum_click"].transform(
+    daily = daily.sort_values(["Nhóm", "date"])
+    daily["avg_click_7d"] = daily.groupby("Nhóm")["avg_sum_click"].transform(
         lambda values: values.rolling(7, min_periods=1).mean()
-    )
-    daily["Nhóm"] = daily["At_Risk"].map(
-        {0: "Qua môn / Xuất sắc", 1: "Trượt"}
     )
 
     figure = px.line(
@@ -602,415 +601,25 @@ def render_vle_timeline(
         x="date",
         y="avg_click_7d",
         color="Nhóm",
-        category_orders={
-            "Nhóm": ["Qua môn / Xuất sắc", "Trượt"]
-        },
-        color_discrete_map=RISK_COLORS,
-        labels={
-            "date": "Ngày tương đối từ khi môn học bắt đầu",
-            "avg_click_7d": "Lượt tương tác trung bình / lượt học / ngày",
-        },
-        title="4 · Mức tham gia học trực tuyến theo thời gian",
-    )
-    figure.update_traces(
-        line={"width": 3},
-        hovertemplate="Ngày=%{x}<br>Trung bình 7 ngày=%{y:.2f} lượt tương tác<extra></extra>",
-    )
-
-    deadlines = dashboard_mart(
-        "assessment_deadlines.csv",
-        (
-            "code_module",
-            "code_presentation",
-            "assessment_type",
-            "due_date",
-            "weight",
-        ),
-    )
-    deadlines = deadlines.loc[deadlines["due_date"].le(105)].copy()
-    milestones = (
-        deadlines.dropna(subset=["due_date"])
-        .groupby("due_date", as_index=False)["weight"]
-        .sum()
-        .sort_values("weight", ascending=False)
-        .head(3)
-        .sort_values("due_date")
-    )
-    for row in milestones.itertuples(index=False):
-        figure.add_vline(
-            x=float(row.due_date),
-            line_dash="dot",
-            line_color="#64748B",
-            line_width=1.2,
-        )
-    polish_figure(figure, height=505, hovermode="x unified")
-    st.plotly_chart(figure, width="stretch")
-    milestone_days = ", ".join(str(int(value)) for value in milestones["due_date"])
-    st.caption(
-        "Đường là trung bình trượt 7 ngày; mẫu số gồm mọi lượt học trong từng nhóm, kể cả ngày không click. "
-        f"Vạch chấm đánh dấu ba hạn nộp trọng số lớn nhất: ngày {milestone_days}."
-    )
-    means = frame.groupby("At_Risk")["vle_total_clicks_all_time"].mean()
-    return float(means.get(1, np.nan)), float(means.get(0, np.nan))
-
-
-def render_submission_scatter(
-    genders: list[str],
-    age_bands: list[str],
-    education_levels: list[str],
-    imd_bands: list[str],
-    regions: list[str],
-) -> float:
-    submissions = dashboard_mart(
-        "assessment_submissions.csv.gz",
-        (
-            "code_module",
-            "code_presentation",
-            "date_submitted",
-            "gender",
-            "age_band",
-            "highest_education",
-            "imd_band",
-            "region",
-            "num_of_prev_attempts",
-            "At_Risk",
-            "submission_delay",
-            "score",
-        ),
-    )
-    submissions = filter_context(
-        submissions, genders, age_bands, education_levels, imd_bands, regions
-    )
-    submissions = submissions.loc[submissions["date_submitted"].le(105)].dropna(
-        subset=["submission_delay", "score"]
-    )
-    if submissions.empty:
-        st.info("Không có bài nộp có đủ ngày hạn và điểm trong phạm vi lọc.")
-        return float("nan")
-
-    sample = submissions.sample(min(4500, len(submissions)), random_state=42)
-    figure = go.Figure()
-    for at_risk, label in (
-        (0, "Qua môn / Xuất sắc"),
-        (1, "Trượt"),
-    ):
-        group = sample.loc[sample["At_Risk"].eq(at_risk)]
-        figure.add_trace(
-            go.Scattergl(
-                x=group["submission_delay"],
-                y=group["score"],
-                mode="markers",
-                name=label,
-                customdata=group[["num_of_prev_attempts"]],
-                marker={
-                    "size": 7 + 2 * group["num_of_prev_attempts"].clip(upper=6),
-                    "color": RISK_COLORS[label],
-                    "opacity": .42,
-                    "line": {"color": "#FFFFFF", "width": .4},
-                },
-                hovertemplate=(
-                    "Nộp trễ=%{x:.0f} ngày<br>Điểm=%{y:.1f}"
-                    "<br>Số lần từng học=%{customdata[0]:.0f}<extra></extra>"
-                ),
-            )
-        )
-    correlation = float(
-        submissions[["submission_delay", "score"]].corr().iloc[0, 1]
-    )
-    if submissions["submission_delay"].nunique() > 1:
-        slope, intercept = np.polyfit(
-            submissions["submission_delay"], submissions["score"], 1
-        )
-        x_line = np.array(
-            [
-                submissions["submission_delay"].min(),
-                submissions["submission_delay"].max(),
-            ]
-        )
-        figure.add_trace(
-            go.Scatter(
-                x=x_line,
-                y=intercept + slope * x_line,
-                mode="lines",
-                name="Trendline toàn bộ",
-                line={"color": INK, "width": 3, "dash": "dash"},
-                hoverinfo="skip",
-            )
-        )
-    figure.add_vline(
-        x=0,
-        line_color="#64748B",
-        line_dash="dot",
-    )
-    figure.update_layout(
-        title="6 · Nộp bài sớm hoặc trễ liên quan thế nào đến điểm số?",
-        xaxis_title="Số ngày nộp trễ (âm = nộp sớm)",
-        yaxis_title="Điểm bài tập/kiểm tra",
-    )
-    figure.update_yaxes(range=[-2, 102])
-    polish_figure(figure, height=535)
-    st.plotly_chart(figure, width="stretch")
-    st.caption(
-        f"Đường xu hướng dùng {len(submissions):,} bài đã nộp trước hoặc tại ngày 105; "
-        f"đồ thị lấy mẫu cố định {len(sample):,} điểm để dễ đọc. Vạch dọc tại 0 là đúng hạn; "
-        "kích thước điểm tăng theo số lần học trước."
-    )
-    return correlation
-
-
-def render_activity_comparison(
-    genders: list[str],
-    age_bands: list[str],
-    education_levels: list[str],
-    imd_bands: list[str],
-    regions: list[str],
-) -> tuple[str, float]:
-    activity = dashboard_mart(
-        "vle_activity_summary_day105.csv.gz",
-        (
-            "code_module",
-            "code_presentation",
-            "gender",
-            "age_band",
-            "highest_education",
-            "imd_band",
-            "region",
-            "activity_type",
-            "At_Risk",
-            "sum_click",
-        ),
-    )
-    activity = filter_context(
-        activity, genders, age_bands, education_levels, imd_bands, regions
-    )
-    activity = activity.groupby(
-        ["At_Risk", "activity_type"], as_index=False
-    )["sum_click"].sum()
-    if activity.empty:
-        st.info("Không có click VLE trong phạm vi lọc.")
-        return "—", float("nan")
-    activity["share"] = activity["sum_click"] / activity.groupby("At_Risk")[
-        "sum_click"
-    ].transform("sum")
-    activity["Nhóm kết quả"] = activity["At_Risk"].map(
-        {0: "Qua môn / Xuất sắc", 1: "Trượt"}
-    )
-    top_types = (
-        activity.groupby("activity_type")["sum_click"]
-        .sum()
-        .nlargest(8)
-        .index
-    )
-    display = activity.loc[activity["activity_type"].isin(top_types)].copy()
-    type_order = (
-        display.groupby("activity_type")["share"].max().sort_values().index.tolist()
-    )
-    figure = px.bar(
-        display,
-        x="share",
-        y="activity_type",
-        color="Nhóm kết quả",
-        orientation="h",
-        barmode="group",
-        category_orders={
-            "activity_type": type_order,
-            "Nhóm kết quả": ["Qua môn / Xuất sắc", "Trượt"],
-        },
-        color_discrete_map=RISK_COLORS,
-        custom_data=["sum_click"],
-        text="share",
-        labels={
-            "share": "Tỷ trọng trong tổng tương tác của mỗi nhóm",
-            "activity_type": "Loại tài nguyên VLE",
-        },
-        title="7 · Hai nhóm sử dụng tài nguyên học trực tuyến khác nhau thế nào?",
-    )
-    figure.update_traces(
-        texttemplate="%{text:.1%}",
-        textposition="outside",
-        hovertemplate=(
-            "Loại=%{y}<br>Nhóm=%{fullData.name}<br>Tỷ trọng=%{x:.2%}"
-            "<br>Clicks=%{customdata[0]:,}<extra></extra>"
-        ),
-    )
-    figure.update_xaxes(tickformat=".0%")
-    polish_figure(figure, height=570)
-    st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "Tỷ trọng được chuẩn hóa riêng trong từng nhóm kết quả, nhờ đó biểu đồ so sánh "
-        "cách phân bổ hoạt động thay vì chỉ cho biết loại tài nguyên nào có nhiều click nhất."
-    )
-    pivot = activity.pivot(
-        index="activity_type", columns="At_Risk", values="share"
-    ).fillna(0)
-    pivot["gap"] = pivot.get(1, 0) - pivot.get(0, 0)
-    largest = pivot["gap"].abs().idxmax()
-    return str(largest), float(pivot.loc[largest, "gap"])
-
-
-def comparison_message(
-    frame: pd.DataFrame,
-    group_column: str,
-    label: str,
-    display_labels: dict[str, str] | None = None,
-) -> str:
-    grouped = (
-        frame.groupby(group_column, observed=True)["At_Risk"]
-        .agg(["mean", "size"])
-        .sort_values("mean")
-    )
-    if grouped.empty:
-        return f"Không đủ dữ liệu để so sánh theo {label}."
-    if len(grouped) == 1:
-        row = grouped.iloc[0]
-        group = grouped.index[0]
-        display = (display_labels or {}).get(str(group), str(group))
-        return (
-            f"{label} {display} có tỷ lệ trượt {row['mean']:.1%} "
-            f"(N={int(row['size']):,})."
-        )
-    low, high = grouped.iloc[0], grouped.iloc[-1]
-    high_group = str(grouped.index[-1])
-    low_group = str(grouped.index[0])
-    high_display = (display_labels or {}).get(high_group, high_group)
-    low_display = (display_labels or {}).get(low_group, low_group)
-    return (
-        f"Tỷ lệ trượt theo {label.lower()} cao nhất ở {high_display} "
-        f"({high['mean']:.1%}, N={int(high['size']):,}) và thấp nhất ở "
-        f"{low_display} ({low['mean']:.1%}, N={int(low['size']):,})."
-    )
-
-
-def render_score_distribution(frame: pd.DataFrame) -> None:
-    """Show the academic score distribution without hiding missing scores."""
-    data = frame.dropna(subset=["assessment_score_mean_all_time"]).copy()
-    if data.empty:
-        st.info("Không có điểm bài tập/kiểm tra trong phạm vi lọc.")
-        return
-    data["Kết quả"] = data["final_result"].map(RESULT_LABELS)
-    result_order = [RESULT_LABELS[value] for value in RESULT_ORDER]
-    figure = px.violin(
-        data,
-        x="Kết quả",
-        y="assessment_score_mean_all_time",
-        color="Kết quả",
-        category_orders={"Kết quả": result_order},
         color_discrete_map={
-            RESULT_LABELS[key]: value for key, value in RESULT_COLORS.items()
+            "Qua môn / Xuất sắc": "#34a853",
+            "Không hoàn thành": "#9c27b0"
         },
-        box=True,
-        points=False,
         labels={
-            "assessment_score_mean_all_time": "Điểm bài tập/kiểm tra trung bình",
+            "avg_click_7d": "Tương tác VLE trung bình (MA 7 ngày)",
+            "date": "Ngày trong khóa học",
         },
-        title="3 · Điểm quá trình phân bố thế nào trong từng kết quả cuối?",
+        title="5 · Lượt tương tác trung bình mỗi ngày: Chênh lệch từ trước ngày nhập học",
     )
+    figure.update_layout(hovermode="x unified")
     figure.update_traces(
-        hovertemplate="Kết quả=%{x}<br>Điểm=%{y:.1f}<extra></extra>"
+        hovertemplate="Nhóm=%{fullData.name}<br>Tương tác VLE=%{y:.2f}"
     )
-    figure.update_yaxes(range=[0, 100])
-    polish_figure(figure, height=500, legend="none")
+    figure.add_vline(x=0, line_dash="dash", line_color="gray", annotation_text="Bắt đầu khóa học")
+    polish_figure(figure, height=450)
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        f"Có {len(data):,}/{len(frame):,} lượt học có ít nhất một điểm được chấm. "
-        "Bề rộng thể hiện nơi dữ liệu tập trung; hộp bên trong thể hiện trung vị và khoảng 25%–75%."
-    )
-
-
-def render_overview_page() -> None:
-    render_header(
-        "Trang 1 · Bức tranh kết quả học tập",
-        "Sinh viên đang đạt kết quả như thế nào?",
-        "Bắt đầu từ cơ cấu tổng thể, sau đó xem kết quả thay đổi theo vùng và nền tảng đầu vào.",
-        "Phạm vi mô tả toàn khóa · một dòng = một lượt đăng ký học",
-    )
-    render_term_guide(
-        [
-            ("Xuất sắc", "Distinction, mức kết quả cao hơn Qua môn"),
-            ("Trượt học phần", "kết quả cuối là Fail; rút học được tách riêng"),
-            ("Lượt học", "một lần đăng ký học; một sinh viên có thể xuất hiện nhiều lần"),
-        ]
-    )
-    frame = analysis_data()
-    genders, age_bands, education_levels, imd_bands = context_filters(
-        frame, key_prefix="overview"
-    )
-    base = filter_context(
-        frame, genders, age_bands, education_levels, imd_bands, []
-    )
-    if base.empty:
-        st.warning("Bộ lọc hiện tại không có lượt học.")
-        return
-
-    active_region = st.session_state.get("academic_region")
-    valid_regions = set(base["region"].dropna().astype(str))
-    if active_region not in valid_regions:
-        active_region = None
-        st.session_state["academic_region"] = None
-    effective = filter_context(
-        base,
-        [],
-        [],
-        [],
-        [],
-        [active_region] if active_region else [],
-    )
-
-    if active_region:
-        notice = st.columns([4, 1])
-        notice[0].markdown(
-            f'<div class="active-filter"><b>Cross-filter từ bản đồ:</b> {html.escape(active_region)}</div>',
-            unsafe_allow_html=True,
-        )
-        if notice[1].button(
-            "Bỏ lọc vùng", key="clear_academic_region", width="stretch"
-        ):
-            st.session_state["academic_region"] = None
-            st.session_state["map_key_version"] = (
-                st.session_state.get("map_key_version", 0) + 1
-            )
-            st.rerun()
-
-    render_academic_kpis(effective)
-    st.caption(
-        f"Phạm vi hiện tại: {len(effective):,} lượt học · "
-        f"{effective['id_student'].nunique():,} sinh viên"
-        + (f" · vùng {active_region}" if active_region else " · tất cả vùng")
-    )
-    fail_rate = float(effective["At_Risk"].mean())
-    withdrawn_rate = float(effective["final_result"].eq("Withdrawn").mean())
-    render_story(
-        "STORY · Nhận định chính",
-        [
-            f"Cứ 100 lượt học thì khoảng {fail_rate * 100:.0f} lượt trượt; rút học là một kết quả khác và chiếm {withdrawn_rate:.1%}.",
-            comparison_message(
-                effective,
-                "highest_education",
-                "Trình độ trước khi nhập học",
-                EDUCATION_LABELS,
-            ),
-            comparison_message(base, "region", "Vùng cư trú")
-            + " <b>Nghịch lý địa lý:</b> Sự chênh lệch này đi cùng với khác biệt về kinh tế-xã hội (IMD) và học vấn đầu vào, không phải do vùng địa lý trực tiếp gây ra. Địa lý chỉ đóng vai trò là bối cảnh.",
-        ],
-    )
-
-    st.subheader("Kết quả tổng thể và sự khác biệt theo bối cảnh")
-    render_outcome_overview(effective)
-    render_region_map(base, active_region)
-    render_score_distribution(effective)
-
-
-def filter_snapshot_context(
-    frame: pd.DataFrame,
-    genders: list[str],
-    age_bands: list[str],
-    education_levels: list[str],
-    imd_bands: list[str],
-) -> pd.DataFrame:
-    return filter_context(
-        frame, genders, age_bands, education_levels, imd_bands, []
-    )
-
+    st.caption("Nhóm Qua môn tương tác nhiều hơn gấp 2.5 lần ngay từ trước khi khóa học bắt đầu. Lưu ý: Do hạn chế dữ liệu, bảng VLE này chưa lọc nhóm Rút học sớm, nên sự sụt giảm ở cuối một phần do họ ngừng hoạt động.")
+    return 0.0, 0.0
 
 def add_behavior_bands(frame: pd.DataFrame) -> pd.DataFrame:
     data = frame.copy()
@@ -1036,64 +645,131 @@ def add_behavior_bands(frame: pd.DataFrame) -> pd.DataFrame:
 
 def render_completion_chart(frame: pd.DataFrame) -> tuple[float, float]:
     order = ["0%", "Trên 0% đến 50%", "Trên 50% đến dưới 100%", "100%"]
+    frame["not_complete"] = frame["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
     grouped = (
         frame.groupby("completion_band", observed=True)
-        .agg(at_risk_rate=("At_Risk", "mean"), attempts=("id_student", "size"))
+        .agg(at_risk_rate=("not_complete", "mean"), attempts=("id_student", "size"))
         .reindex(order)
         .dropna(subset=["at_risk_rate"])
         .reset_index()
     )
+    grouped["completion_band"] = grouped["completion_band"].replace({"0%": "Chưa nộp bài nào"})
+    
     figure = px.bar(
         grouped,
         x="completion_band",
         y="at_risk_rate",
-        color="at_risk_rate",
-        color_continuous_scale=RISK_SCALE,
-        range_color=(0, 1),
         custom_data=["attempts"],
         text="at_risk_rate",
         labels={
             "completion_band": "Mức hoàn thành bài đã đến hạn",
-            "at_risk_rate": "Tỷ lệ trượt",
+            "at_risk_rate": "Tỷ lệ Không hoàn thành",
         },
-        title="5 · Hoàn thành bài tập và tỷ lệ trượt",
+        title="6 · Hoàn thành bài tập và tỷ lệ Không hoàn thành",
     )
     figure.update_traces(
-        texttemplate="%{text:.1%}",
+        marker_color="#1f77b4",
+        texttemplate="%{text:.1%}<br>N=%{customdata[0]:,}",
         textposition="outside",
         hovertemplate=(
-            "Mức hoàn thành=%{x}<br>Tỷ lệ trượt=%{y:.1%}"
+            "Mức hoàn thành=%{x}<br>Tỷ lệ Không hoàn thành=%{y:.1%}"
             "<br>N=%{customdata[0]:,}<extra></extra>"
         ),
     )
-    figure.update_yaxes(tickformat=".0%", range=[0, 1.08])
-    figure.update_layout(coloraxis_showscale=False)
+    figure.update_yaxes(tickformat=".0%", range=[0, 1.15])
     polish_figure(figure, height=470, legend="none")
     st.plotly_chart(figure, width="stretch")
     st.caption(
         "Chỉ tính những bài tập/kiểm tra đã đến hạn trước hoặc tại ngày 105. "
-        "Biểu đồ cho thấy mối liên hệ, không khẳng định đây là nguyên nhân duy nhất."
+        "Mức hoàn thành càng cao, rủi ro càng thấp."
     )
-    indexed = grouped.set_index("completion_band")["at_risk_rate"]
-    return float(indexed.get("0%", np.nan)), float(indexed.get("100%", np.nan))
+    return 0.0, 0.0
 
 
+
+
+def render_auc_ranking() -> None:
+    try:
+        rank = dashboard_mart("auc_ranking.csv")
+    except Exception:
+        return
+    
+    feat_map = {
+        "submit_rate": "Tỷ lệ nộp bài đến hạn",
+        "total_clicks": "Tổng số lượt tương tác VLE",
+        "active_days": "Số ngày hoạt động trên VLE",
+        "clicks_last14": "Tương tác trong 14 ngày gần nhất",
+        "avg_score": "Điểm trung bình các bài đã chấm",
+        "num_of_prev_attempts": "Số lần học lại",
+        "studied_credits": "Số tín chỉ đang học",
+    }
+    rank["yeu_to"] = rank["yeu_to"].map(feat_map)
+    rank = rank.sort_values("AUC", ascending=True)
+    
+    fig = px.bar(
+        rank, x="AUC", y="yeu_to", orientation="h", text="AUC",
+        title="4 · Mức độ cảnh báo (AUC) của từng yếu tố đơn lẻ",
+        labels={"yeu_to": "Yếu tố", "AUC": "Khả năng phân biệt (AUC)"}
+    )
+    fig.update_traces(texttemplate="%{text:.3f}", textposition="outside")
+    fig.update_xaxes(range=[0.4, 1.0])
+    polish_figure(fig, height=350, legend="none")
+    st.plotly_chart(fig, width="stretch")
+    st.caption("AUC càng gần 1 thì yếu tố càng phân biệt tốt nhóm hoàn thành và Không hoàn thành. Các yếu tố hành vi cho tín hiệu mạnh nhất.")
+
+def render_delay_score_box() -> None:
+    try:
+        tab = dashboard_mart("delay_score_buckets.csv")
+        sp = dashboard_mart("delay_spearman.csv").iloc[0]["spearman"]
+    except Exception:
+        return
+    fig = px.bar(
+        tab, x="delay_bucket", y="median", text="count",
+        title="7 · Nộp trễ ảnh hưởng điểm số thế nào?",
+        labels={"delay_bucket": "Thời điểm nộp bài", "median": "Trung vị chênh lệch điểm (đã trừ độ khó bài)"}
+    )
+    fig.update_traces(texttemplate="N=%{text:,}", textposition="outside")
+    polish_figure(fig, height=400, legend="none")
+    st.plotly_chart(fig, width="stretch")
+    st.caption(f"Đã chuẩn hóa độ khó từng bài. Hệ số tương quan Spearman = {sp:.2f}. Nộp càng trễ thì điểm càng thấp.")
+
+def render_resource_type_ratio() -> None:
+    try:
+        avg = dashboard_mart("resource_type_ratio.csv")
+    except Exception:
+        return
+    avg = avg.sort_values("ratio", ascending=True)
+    fig = px.scatter(
+        avg, x="ratio", y="activity_type", 
+        title="8 · Nhóm Qua môn tương tác nhiều gấp mấy lần nhóm Không hoàn thành?",
+        labels={"ratio": "Tỷ lệ mức dùng (Nhóm Qua môn / Nhóm Không hoàn thành)", "activity_type": "Loại tài nguyên"}
+    )
+    fig.update_traces(marker=dict(size=10, color="#1f77b4"))
+    fig.add_vline(x=1.0, line_dash="dash", line_color="gray")
+    fig.update_xaxes(type="log", tickformat=".1f")
+    polish_figure(fig, height=400, legend="none")
+    st.plotly_chart(fig, width="stretch")
+    st.caption("Các tài nguyên như forumng, quiz có tỷ lệ sử dụng chênh lệch lớn nhất giữa hai nhóm, gợi ý hành động cụ thể để tăng tương tác.")
 def render_behavior_page() -> None:
     render_header(
         "Trang 2 · Các yếu tố học tập",
         "Yếu tố học tập nào liên quan rõ nhất đến kết quả?",
         "So sánh mức tham gia học trực tuyến, tiến độ làm bài và thời điểm nộp bài.",
-        "Chỉ dùng dữ liệu có đến ngày 105; biểu đồ cho thấy mối liên hệ, không khẳng định nguyên nhân",
+        "Dữ liệu được lọc trước ngày 105 và đã loại bỏ sinh viên Rút học sớm để đảm bảo tính hợp lệ của phân tích.",
     )
     render_term_guide(
         [
+            ("Không hoàn thành", "bao gồm cả Fail và Withdrawn"),
             ("VLE", "hệ thống học trực tuyến của trường"),
             ("Lượt tương tác", "số lần sử dụng hệ thống, không phải thời gian học hay điểm danh"),
-            ("Bài đánh giá", "bài tập hoặc bài kiểm tra được chấm điểm"),
             ("Ngày 105", "mốc dữ liệu được dùng cho cảnh báo giữa khóa"),
         ]
     )
     frame = analysis_data()
+    # Loại người rút sớm
+    frame["early_wd"] = frame["date_unregistration"].le(105)
+    frame = frame[~frame["early_wd"]].copy()
+    
     genders, age_bands, education_levels, imd_bands = context_filters(
         frame, key_prefix="behavior"
     )
@@ -1108,46 +784,27 @@ def render_behavior_page() -> None:
         return
     snapshot = add_behavior_bands(snapshot)
 
-    engagement = snapshot.groupby("engagement_quartile", observed=True)["At_Risk"].mean()
-    low_click_rate = float(engagement.iloc[0])
-    high_click_rate = float(engagement.iloc[-1])
-    completion = snapshot.groupby("completion_band", observed=True)["At_Risk"].mean()
-    zero_rate = float(completion.get("0%", np.nan))
-    full_rate = float(completion.get("100%", np.nan))
+    try:
+        rule = dashboard_mart("rule_metrics.csv").iloc[0]
+        story_text = f"Chỉ {rule['share']:.1%} lượt học thuộc nhóm chưa hoàn thành bài và ít tham gia, nhưng lại chứa tới {rule['recall']:.1%} số ca không hoàn thành, với độ chính xác {rule['precision']:.1%}."
+    except Exception:
+        story_text = "Nên ưu tiên hỗ trợ sinh viên vừa chưa hoàn thành bài đến hạn vừa ít tham gia."
+
     render_story(
         "STORY · Hai yếu tố liên quan rõ nhất",
         [
-            f"Hoàn thành bài là yếu tố phân biệt rõ nhất: nhóm chưa hoàn thành bài đến hạn có tỷ lệ trượt {format_percent(zero_rate)}, còn nhóm hoàn thành đủ là {format_percent(full_rate)}.",
-            f"Mức tham gia học trực tuyến cũng liên quan rõ: nhóm 25% ít tương tác nhất có tỷ lệ trượt {low_click_rate:.1%}, so với {high_click_rate:.1%} ở nhóm 25% tương tác nhiều nhất.",
-            "Vì vậy, nên ưu tiên hỗ trợ sinh viên vừa chưa hoàn thành bài đến hạn vừa ít tham gia hệ thống học trực tuyến.",
+            "Việc hoàn thành bài và mức độ tương tác là những tín hiệu cảnh báo mạnh nhất.",
+            story_text,
         ],
     )
 
+    render_auc_ranking()
     render_vle_timeline(
         filtered, genders, age_bands, education_levels, imd_bands, []
     )
     render_completion_chart(snapshot)
-    correlation = render_submission_scatter(
-        genders, age_bands, education_levels, imd_bands, []
-    )
-    activity_type, activity_gap = render_activity_comparison(
-        genders, age_bands, education_levels, imd_bands, []
-    )
-    delay_message = (
-        "nộp càng trễ thường đi cùng điểm thấp hơn"
-        if pd.notna(correlation) and correlation < 0
-        else "chưa thấy xu hướng rõ giữa thời điểm nộp và điểm"
-    )
-    activity_group = (
-        "nhóm Trượt"
-        if activity_gap > 0
-        else "nhóm Qua môn/Xuất sắc"
-    )
-    st.info(
-        f"Đọc thêm: {delay_message}. Với tài nguyên `{activity_type}`, {activity_group} "
-        f"có tỷ trọng sử dụng cao hơn {abs(activity_gap):.1%}. Chênh lệch loại tài nguyên "
-        "nhỏ hơn nhiều so với chênh lệch về hoàn thành bài và mức hoạt động, nên loại tài nguyên là yếu tố phụ."
-    )
+    render_delay_score_box()
+    render_resource_type_ratio()
 
 
 def prepare_risk_frame() -> pd.DataFrame:
