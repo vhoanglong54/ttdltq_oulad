@@ -267,31 +267,33 @@ def compare_two_groups(
 def build_insight_evidence(
     clean: pd.DataFrame,
     snapshot: pd.DataFrame,
-    module_presentation: pd.DataFrame,
     region: pd.DataFrame,
 ) -> pd.DataFrame:
     evidence: list[InsightEvidence] = []
 
-    lowest_mp = module_presentation.sort_values("at_risk_rate").iloc[0]
-    highest_mp = module_presentation.sort_values("at_risk_rate").iloc[-1]
+    education = summarize_risk(clean, ["highest_education"])
+    lowest_education = education.sort_values("at_risk_rate").iloc[0]
+    highest_education = education.sort_values("at_risk_rate").iloc[-1]
     evidence.append(
         InsightEvidence(
             insight_id="INS-01",
             rq="RQ1",
-            comparison="Module-presentation có tỷ lệ Fail cao nhất so với thấp nhất",
-            group_a=f"{highest_mp.code_module}-{highest_mp.code_presentation}",
-            group_a_n=int(highest_mp.attempts),
-            group_a_rate=float(highest_mp.at_risk_rate),
-            group_b=f"{lowest_mp.code_module}-{lowest_mp.code_presentation}",
-            group_b_n=int(lowest_mp.attempts),
-            group_b_rate=float(lowest_mp.at_risk_rate),
+            comparison="Học vấn đầu vào có tỷ lệ Fail cao nhất so với thấp nhất",
+            group_a=str(highest_education.highest_education),
+            group_a_n=int(highest_education.attempts),
+            group_a_rate=float(highest_education.at_risk_rate),
+            group_b=str(lowest_education.highest_education),
+            group_b_n=int(lowest_education.attempts),
+            group_b_rate=float(lowest_education.at_risk_rate),
             risk_difference_pp=(
-                float(highest_mp.at_risk_rate) - float(lowest_mp.at_risk_rate)
+                float(highest_education.at_risk_rate)
+                - float(lowest_education.at_risk_rate)
             )
             * 100,
-            risk_ratio=float(highest_mp.at_risk_rate) / float(lowest_mp.at_risk_rate),
+            risk_ratio=float(highest_education.at_risk_rate)
+            / float(lowest_education.at_risk_rate),
             scope=f"Full descriptive table; N={len(clean):,} attempts",
-            limitation="Khác biệt có thể phản ánh cấu trúc module, assessment và cohort; không phải tác động nhân quả.",
+            limitation="Học vấn đầu vào đi cùng nhiều khác biệt nền tảng khác; đây không phải tác động nhân quả độc lập.",
         )
     )
     evidence.append(
@@ -444,7 +446,7 @@ def build_hypothesis_results(
             {
                 "hypothesis": "H01",
                 "status": "Ủng hộ ở mức mô tả",
-                "evidence": f"Module-presentation range={by_id.loc['INS-01','risk_difference_pp']:.2f} pp",
+                "evidence": f"Prior-education range={by_id.loc['INS-01','risk_difference_pp']:.2f} pp",
                 "scope": "Full descriptive table",
             },
             {
@@ -528,7 +530,7 @@ def save_tables(clean: pd.DataFrame, snapshot: pd.DataFrame) -> dict[str, pd.Dat
     submission_delay = summarize_risk(snapshot, ["submission_delay_quartile"])
     education = summarize_risk(snapshot, ["highest_education"])
     weekly = build_weekly_vle_trend(snapshot)
-    evidence = build_insight_evidence(clean, snapshot, module_presentation, region)
+    evidence = build_insight_evidence(clean, snapshot, region)
     hypotheses = build_hypothesis_results(clean, snapshot, weekly, evidence)
 
     tables = {

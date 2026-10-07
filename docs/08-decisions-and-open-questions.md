@@ -15,7 +15,7 @@
 | D11 | Chốt | Không tạo GPA, attendance, study hours hoặc biến OULAD không đo. | Data integrity |
 | D12 | Chốt | Không dùng `date_unregistration`, target, `*_all_time` hay post-cutoff event làm feature. | Leakage guard |
 | D13 | Chốt | Dashboard chỉ đọc artifact đã verification; không train khi render. | Kiến trúc |
-| D14 | Chờ leader | Remote Git mới, commit và push. | Git |
+| D14 | Đã chốt | Remote hiện hành: `https://github.com/vhoanglong54/ttdltq_oulad.git`, nhánh `main`; mỗi thay đổi mới vẫn cần leader duyệt trước commit/push. | Git |
 
 ## Điểm mở trước nghiệm thu cuối
 

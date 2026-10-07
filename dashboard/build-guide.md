@@ -43,4 +43,4 @@ python -m compileall dashboard src tests
 python -m unittest discover -s tests -v
 ```
 
-Sau khi đổi data/model/UI phải chụp lại 4 trang và cập nhật `qa-t09.md`. Không dùng ảnh v2/v3/v4 để nghiệm thu phiên bản v5.
+Sau khi đổi data/model/UI phải chụp lại 4 trang và cập nhật `qa-t09.md`. Chỉ dùng ảnh v7 để nghiệm thu bố cục hiện hành; ảnh v2–v6 là lịch sử.

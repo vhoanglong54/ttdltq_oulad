@@ -46,8 +46,8 @@ python src/at_risk_model.py validate --output-dir data/processed/model_academic_
 streamlit run dashboard/app.py
 ```
 
-Dashboard gồm bốn trang: bức tranh kết quả; yếu tố học tập; kết hợp nhiều yếu tố; cảnh báo giữa khóa. Bản đồ là biểu đồ Geographic Map bắt buộc, có cross-filter theo vùng.
+Dashboard gồm bốn trang: bức tranh kết quả; yếu tố học tập; kết hợp nhiều yếu tố; mô hình và yếu tố dự báo. Mọi visual đều nối một yếu tố với kết quả hoặc đối chiếu dự báo với kết quả thật. Bản đồ là Geographic Map bắt buộc, có cross-filter theo vùng.
 
 ## Trạng thái Git
 
-Mọi thay đổi hiện chỉ ở local; các remote cũ đã được gỡ khỏi cấu hình. Không fetch, pull, commit hoặc push cho đến khi leader cung cấp repository mới và duyệt kết quả.
+Repository hiện hành là `https://github.com/vhoanglong54/ttdltq_oulad.git`, nhánh `main`. Mọi thay đổi mới chỉ được commit/push sau khi leader xem và cho phép.

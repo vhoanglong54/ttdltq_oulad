@@ -165,9 +165,10 @@ Hiện vật [Data Quality Report](../reports/data-quality-report.md) ghi dữ l
 | File | Grain | Cột chính | Guardrail |
 |---|---|---|---|
 | `dashboard/assessment_deadlines.csv` | assessment | module, presentation, type, due date, weight | chỉ đánh dấu deadline, không phải kết quả người học |
-| `dashboard/assessment_submissions.csv.gz` | submission có score/due date | student, delay, score, previous attempts, filter dims | `delay = submitted - due`; scatter chỉ sample để render |
-| `dashboard/vle_daily_profile.csv.gz` | module × presentation × gender × region × At-Risk × day | `sum_click` | tổng click toàn bảng phải bằng 39.605.099 |
-| `dashboard/vle_activity_summary.csv.gz` | filter dims × activity type | `sum_click` | tổng click toàn bảng phải bằng 39.605.099 |
+| `dashboard/assessment_submissions.csv.gz` | submission có score/due date | delay, score, previous attempts, learner-context filters | `delay = submitted - due`; giao diện không hiển thị identifier |
+| `dashboard/vle_daily_profile.csv.gz` | learner-context filters × kết quả × day | `sum_click` | tổng click toàn bảng phải bằng 39.605.099; dashboard giới hạn ngày `<=105` |
+| `dashboard/vle_activity_summary.csv.gz` | learner-context filters × kết quả × activity type | `sum_click` | tổng click toàn bảng phải bằng 39.605.099 |
+| `dashboard/vle_activity_summary_day105.csv.gz` | learner-context filters × kết quả × activity type tại ngày 105 | `sum_click` | so sánh cơ cấu sử dụng tài nguyên giữa nhóm kết quả, không dùng để liệt kê độ phổ biến |
 
 Các mart được tái tạo bằng `python src/dashboard_features.py`; không sửa thủ công. Đây là aggregate mô tả cho dashboard, không phải feature input mới của model.
 

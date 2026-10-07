@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -58,6 +59,23 @@ class DashboardCalculationTests(unittest.TestCase):
 
 
 class DashboardMartTests(unittest.TestCase):
+    def test_marts_support_meaningful_learner_context_filters(self) -> None:
+        context = {"gender", "age_band", "highest_education", "imd_band", "region"}
+        daily = load_dashboard_mart(
+            "vle_daily_profile.csv.gz", context | {"At_Risk", "date", "sum_click"}
+        )
+        activity = load_dashboard_mart(
+            "vle_activity_summary_day105.csv.gz",
+            context | {"At_Risk", "activity_type", "sum_click"},
+        )
+        submissions = load_dashboard_mart(
+            "assessment_submissions.csv.gz",
+            context | {"At_Risk", "submission_delay", "score"},
+        )
+        self.assertFalse(daily.empty)
+        self.assertFalse(activity.empty)
+        self.assertFalse(submissions.empty)
+
     def test_vle_marts_preserve_all_clean_clicks(self) -> None:
         required = {
             "code_module",
@@ -72,6 +90,10 @@ class DashboardMartTests(unittest.TestCase):
         activity = load_dashboard_mart(
             "vle_activity_summary.csv.gz", required | {"activity_type"}
         )
+        cutoff_activity = load_dashboard_mart(
+            "vle_activity_summary_day105.csv.gz",
+            required | {"At_Risk", "activity_type"},
+        )
         expected = int(
             pd.read_csv(
                 ROOT / "data" / "processed" / "clean_dataset.csv",
@@ -80,6 +102,10 @@ class DashboardMartTests(unittest.TestCase):
         )
         self.assertEqual(int(daily["sum_click"].sum()), expected)
         self.assertEqual(int(activity["sum_click"].sum()), expected)
+        self.assertEqual(
+            int(cutoff_activity["sum_click"].sum()),
+            int(daily.loc[daily["date"].le(105), "sum_click"].sum()),
+        )
 
     def test_submission_delay_is_derived_from_due_date(self) -> None:
         submissions = load_dashboard_mart(
@@ -96,6 +122,28 @@ class DashboardMartTests(unittest.TestCase):
 
 
 class EvidenceContractTests(unittest.TestCase):
+    def test_every_dashboard_visual_has_an_outcome_question(self) -> None:
+        inventory = (ROOT / "dashboard" / "chart-inventory.md").read_text(
+            encoding="utf-8"
+        )
+        rows = [
+            line
+            for line in inventory.splitlines()
+            if re.match(r"^\|\s*\d+\s*\|", line)
+        ]
+        self.assertEqual(len(rows), 13)
+        self.assertTrue(all("→" in row or "↔" in row for row in rows))
+
+        app_source = (ROOT / "dashboard" / "app.py").read_text(encoding="utf-8")
+        for removed_visual in (
+            "px.treemap",
+            "go.Indicator",
+            "render_error_donut",
+            "render_action_table",
+            "outcome_drill_module",
+        ):
+            self.assertNotIn(removed_visual, app_source)
+
     def test_eda_outputs_cover_eight_insights_and_ten_hypotheses(self) -> None:
         insights = pd.read_csv(ROOT / "reports" / "eda" / "insight_evidence.csv")
         hypotheses = pd.read_csv(ROOT / "reports" / "eda" / "hypothesis_results.csv")

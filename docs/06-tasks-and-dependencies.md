@@ -12,7 +12,7 @@ Project do leader thực hiện chính. Tài liệu này quản lý cổng kỹ 
 | 6 | Dashboard bốn trang + map | 4–5 | Đã sửa theo target Fail; AppTest PASS |
 | 7 | QA tích hợp | 4–6 | Unit test cần chạy lại sau thay đổi cuối |
 | 8 | DOCX/báo cáo/slide/demo | 7 | Chưa hoàn tất |
-| 9 | Leader duyệt rồi commit repo mới | 7–8 | Chờ link Git và quyền commit |
+| 9 | Leader duyệt rồi commit repo mới | 7–8 | Đã hoàn thành bản nền; thay đổi tiếp theo vẫn chờ duyệt |
 
 ## Điểm chặn bắt buộc
 
@@ -22,4 +22,4 @@ Project do leader thực hiện chính. Tài liệu này quản lý cổng kỹ 
 - Không nghiệm thu model nếu verification không PASS hoặc dashboard dùng sai artifact/version/threshold.
 - Không nghiệm thu insight nếu thiếu claim, số liệu, `N`, phạm vi và giới hạn.
 - Không nghiệm thu map nếu mapping không đủ 13 region.
-- Không commit/push trước khi leader duyệt và cung cấp repository mới.
+- Không commit/push thay đổi mới trước khi leader duyệt.

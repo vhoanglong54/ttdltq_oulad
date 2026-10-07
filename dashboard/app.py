@@ -1,7 +1,7 @@
 """Four-page OULAD learning analytics dashboard.
 
 The pages follow one analytical flow: outcomes and geography, learning
-behaviour, multivariate interaction, then prediction and action. The app reads
+behaviour, multivariate interaction, then model evaluation. The app reads
 reproducible processed artifacts; it never trains the model or joins the
 multi-million-row VLE table while rendering.
 """
@@ -21,7 +21,6 @@ import streamlit as st
 from dashboard_data import (
     REGION_GEOJSON_PATH,
     compute_kpis,
-    filter_attempts,
     load_analysis_data,
     load_dashboard_mart,
     load_feature_snapshot,
@@ -40,7 +39,7 @@ PAGE_LABELS = {
     "Outcome & Geography": "1 · Bức tranh kết quả học tập",
     "Learning Behavior": "2 · Các yếu tố học tập",
     "Interaction Analysis": "3 · Kết hợp nhiều yếu tố",
-    "Prediction & Action": "4 · Dự đoán nguy cơ",
+    "Prediction & Action": "4 · Mô hình & yếu tố dự báo",
 }
 ATTEMPT_KEY = ["code_module", "code_presentation", "id_student"]
 RESULT_ORDER = ["Distinction", "Pass", "Fail", "Withdrawn"]
@@ -50,15 +49,22 @@ RESULT_COLORS = {
     "Fail": "#F97316",
     "Withdrawn": "#DC2626",
 }
+RESULT_LABELS = {
+    "Distinction": "Xuất sắc",
+    "Pass": "Qua môn",
+    "Fail": "Trượt",
+    "Withdrawn": "Rút học",
+}
 RISK_COLORS = {
     "Qua môn / Xuất sắc": "#2563EB",
     "Trượt": "#DC2626",
 }
-LEVEL_ORDER = ["High", "Medium", "Low"]
-LEVEL_LABELS = {
-    "High": "Cao · cần ưu tiên",
-    "Medium": "Trung bình · cần theo dõi",
-    "Low": "Thấp",
+EDUCATION_LABELS = {
+    "No Formal quals": "Không có bằng cấp chính quy",
+    "Lower Than A Level": "Dưới A Level",
+    "A Level or Equivalent": "A Level hoặc tương đương",
+    "HE Qualification": "Đã có bằng đại học/cao đẳng",
+    "Post Graduate Qualification": "Sau đại học",
 }
 INK = "#0F172A"
 MUTED = "#475569"
@@ -268,18 +274,20 @@ def dashboard_mart(filename: str, required: tuple[str, ...]) -> pd.DataFrame:
     return load_dashboard_mart(filename, set(required))
 
 
-def filter_mart(
+def filter_context(
     frame: pd.DataFrame,
-    modules: list[str],
-    presentations: list[str],
     genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
     regions: list[str],
 ) -> pd.DataFrame:
     mask = pd.Series(True, index=frame.index)
     for column, values in (
-        ("code_module", modules),
-        ("code_presentation", presentations),
         ("gender", genders),
+        ("age_band", age_bands),
+        ("highest_education", education_levels),
+        ("imd_band", imd_bands),
         ("region", regions),
     ):
         if values and column in frame:
@@ -306,39 +314,70 @@ def page_navigation() -> str:
             "- **IMD:** nhóm mức khó khăn kinh tế–xã hội của khu vực cư trú.\n"
             "- **Trượt học phần:** kết quả cuối là Fail; không gộp sinh viên rút học.\n"
             "- **Rút học:** kết quả Withdrawn; được mô tả riêng và không đưa vào model.\n"
-            "- **Lượt học:** một lần sinh viên đăng ký học một học phần trong một đợt mở lớp.\n"
+            "- **Lượt học:** một lần đăng ký học; một sinh viên có thể xuất hiện nhiều lần.\n"
             "- **Bài tập/kiểm tra (assessment):** hoạt động được chấm điểm.\n"
             "- **Cảnh báo giữa khóa ngày 105:** chỉ dùng dữ liệu có sẵn đến ngày 105 để dự đoán nguy cơ trượt.\n"
-            "- **AAA–GGG:** mã học phần đã được OULAD ẩn danh.\n"
-            "- **B/J:** đợt học bắt đầu tháng 2/tháng 10.\n"
             "- Kết quả thể hiện liên hệ, không khẳng định nhân quả."
         )
     return page
 
 
-def page_one_filters(frame: pd.DataFrame) -> tuple[list[str], list[str], list[str]]:
-    st.subheader("Bộ lọc phân tích")
-    columns = st.columns(3)
-    modules = columns[0].multiselect(
-        "Học phần ẩn danh · code_module",
-        sorted(frame["code_module"].dropna().unique()),
-        key="academic_modules",
-        placeholder="Tất cả học phần",
-    )
-    available = frame.loc[frame["code_module"].isin(modules)] if modules else frame
-    presentations = columns[1].multiselect(
-        "Đợt mở lớp · code_presentation",
-        sorted(available["code_presentation"].dropna().unique()),
-        key="academic_presentations",
-        placeholder="Tất cả đợt mở",
-    )
-    genders = columns[2].multiselect(
+def imd_sort_key(value: str) -> tuple[int, str]:
+    if value == "Không xác định":
+        return (999, value)
+    try:
+        return (int(value.split("-")[0].replace("%", "")), value)
+    except ValueError:
+        return (998, value)
+
+
+def context_filters(
+    frame: pd.DataFrame,
+    *,
+    key_prefix: str,
+) -> tuple[list[str], list[str], list[str], list[str]]:
+    st.subheader("Bộ lọc theo đặc điểm người học")
+    columns = st.columns(4)
+    genders = columns[0].multiselect(
         "Giới tính · gender",
         sorted(frame["gender"].dropna().unique()),
-        key="academic_genders",
+        key=f"{key_prefix}_genders",
         placeholder="Tất cả giới tính",
+        format_func=lambda value: {"F": "Nữ", "M": "Nam"}.get(value, value),
     )
-    return modules, presentations, genders
+    age_order = [
+        value
+        for value in ["0-35", "35-55", "55<="]
+        if value in set(frame["age_band"].dropna())
+    ]
+    age_bands = columns[1].multiselect(
+        "Nhóm tuổi",
+        age_order,
+        key=f"{key_prefix}_age_bands",
+        placeholder="Tất cả nhóm tuổi",
+    )
+    education_order = [
+        value
+        for value in EDUCATION_LABELS
+        if value in set(frame["highest_education"].dropna())
+    ]
+    education_levels = columns[2].multiselect(
+        "Học vấn trước khi nhập học",
+        education_order,
+        key=f"{key_prefix}_education",
+        placeholder="Tất cả trình độ",
+        format_func=lambda value: EDUCATION_LABELS.get(value, value),
+    )
+    imd_options = sorted(
+        frame["imd_band"].dropna().astype(str).unique(), key=imd_sort_key
+    )
+    imd_bands = columns[3].multiselect(
+        "Mức điều kiện kinh tế–xã hội khu vực",
+        imd_options,
+        key=f"{key_prefix}_imd",
+        placeholder="Tất cả nhóm khu vực",
+    )
+    return genders, age_bands, education_levels, imd_bands
 
 
 def render_academic_kpis(frame: pd.DataFrame) -> None:
@@ -363,6 +402,11 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
     )
     with REGION_GEOJSON_PATH.open("r", encoding="utf-8") as handle:
         geojson = json.load(handle)
+    color_min = float(stats["at_risk_rate"].min())
+    color_max = float(stats["at_risk_rate"].max())
+    if np.isclose(color_min, color_max):
+        color_min = max(0.0, color_min - .01)
+        color_max = min(1.0, color_max + .01)
     figure = px.choropleth(
         stats,
         geojson=geojson,
@@ -370,9 +414,9 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
         featureidkey="properties.region",
         color="at_risk_rate",
         color_continuous_scale=RISK_SCALE,
-        range_color=(0, 1),
+        range_color=(color_min, color_max),
         custom_data=["region", "attempts", "at_risk_count", "at_risk_rate"],
-        title="1 · Tỷ lệ trượt theo vùng cư trú",
+        title="2 · Tỷ lệ trượt theo vùng cư trú",
     )
     figure.update_geos(fitbounds="locations", visible=False, bgcolor="#FFFFFF")
     figure.update_traces(
@@ -404,9 +448,8 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
             st.session_state["academic_region"] = str(selected)
             st.rerun()
     st.caption(
-        "Bấm một vùng để lọc KPI và biểu đồ cơ cấu kết quả trên Trang 1. "
-        "Màu đậm hơn = tỷ lệ trượt cao hơn; màu không phản ánh số sinh viên. "
-        "Bản đồ cho biết nơi cần xem xét sâu hơn, không tự chứng minh nơi cư trú gây ra kết quả."
+        "Bấm một vùng để lọc KPI và các biểu đồ trên Trang 1. "
+        "Màu đậm hơn = tỷ lệ trượt cao hơn; tooltip cho biết tỷ lệ và cỡ mẫu N."
     )
 
 
@@ -420,127 +463,94 @@ def outcome_percentages(frame: pd.DataFrame, group_column: str) -> pd.DataFrame:
     counts["share"] = counts["attempts"] / counts.groupby(group_column)[
         "attempts"
     ].transform("sum")
-    counts["final_result"] = pd.Categorical(
-        counts["final_result"], RESULT_ORDER, ordered=True
+    counts["result_label"] = counts["final_result"].map(RESULT_LABELS)
+    return counts
+
+
+def render_outcome_overview(frame: pd.DataFrame) -> None:
+    detail = bool(st.session_state.get("outcome_education_detail", False))
+    controls = st.columns([4, 1])
+    controls[0].markdown(
+        "**Cơ cấu chung**" if not detail else "**Phân tích sâu theo học vấn đầu vào**"
     )
-    return counts.sort_values([group_column, "final_result"])
+    button_label = "Xem theo học vấn đầu vào" if not detail else "Quay lại tổng thể"
+    if controls[1].button(
+        button_label,
+        key="toggle_outcome_education",
+        width="stretch",
+    ):
+        st.session_state["outcome_education_detail"] = not detail
+        st.rerun()
 
-
-def render_outcome_drill(frame: pd.DataFrame) -> None:
-    valid_modules = set(frame["code_module"].astype(str))
-    selected_module = st.session_state.get("outcome_drill_module")
-    if selected_module not in valid_modules:
-        selected_module = None
-        st.session_state["outcome_drill_module"] = None
-
-    if selected_module:
-        top = st.columns([4, 1])
-        top[0].markdown(
-            f"**Drill-down:** Tất cả học phần → `{selected_module}` → Đợt mở lớp"
+    chart_frame = frame.copy()
+    if detail:
+        chart_frame["Nhóm"] = chart_frame["highest_education"].map(
+            EDUCATION_LABELS
+        ).fillna("Không xác định")
+        group_order = (
+            chart_frame.groupby("Nhóm", observed=True)["At_Risk"]
+            .mean()
+            .sort_values()
+            .index.tolist()
         )
-        if top[1].button(
-            "↑ Quay lại học phần", key="reset_outcome_drill", width="stretch"
-        ):
-            st.session_state["outcome_drill_module"] = None
-            st.session_state["outcome_key_version"] = (
-                st.session_state.get("outcome_key_version", 0) + 1
-            )
-            st.rerun()
-        chart_frame = frame.loc[frame["code_module"].eq(selected_module)]
-        group_column = "code_presentation"
-        title = f"2 · Cơ cấu kết quả theo đợt mở lớp của {selected_module}"
-        y_label = "Đợt mở lớp"
+        title = "1 · Cơ cấu kết quả theo học vấn trước khi nhập học"
+        height = 500
     else:
-        st.caption(
-            "AAA–GGG là mã học phần đã được ẩn danh. Bấm một thanh để xem các đợt mở lớp bên trong."
-        )
-        chart_frame = frame
-        group_column = "code_module"
-        title = "2 · Cơ cấu kết quả theo học phần ẩn danh"
-        y_label = "Học phần ẩn danh"
+        chart_frame["Nhóm"] = "Toàn bộ sinh viên"
+        group_order = ["Toàn bộ sinh viên"]
+        title = "1 · Cơ cấu kết quả học tập tổng thể"
+        height = 330
 
-    data = outcome_percentages(chart_frame, group_column)
-    risk_order = (
-        chart_frame.groupby(group_column, observed=True)["At_Risk"]
-        .mean()
-        .sort_values()
-    )
-    data["inside_label"] = data["share"].map(
-        lambda value: f"{value:.0%}" if value >= .06 else ""
+    data = outcome_percentages(chart_frame, "Nhóm")
+    data["inside_label"] = data.apply(
+        lambda row: f"{row['share']:.0%}<br>N={int(row['attempts']):,}"
+        if row["share"] >= .06
+        else "",
+        axis=1,
     )
     figure = px.bar(
         data,
         x="share",
-        y=group_column,
-        color="final_result",
+        y="Nhóm",
+        color="result_label",
         orientation="h",
         barmode="stack",
-        category_orders={"final_result": RESULT_ORDER},
-        color_discrete_map=RESULT_COLORS,
+        category_orders={
+            "result_label": [RESULT_LABELS[value] for value in RESULT_ORDER],
+            "Nhóm": group_order,
+        },
+        color_discrete_map={
+            RESULT_LABELS[key]: value for key, value in RESULT_COLORS.items()
+        },
         custom_data=["attempts"],
         text="inside_label",
-        labels={
-            "share": "Tỷ trọng kết quả",
-            group_column: y_label,
-            "final_result": "Kết quả",
-        },
+        labels={"share": "Tỷ trọng", "result_label": "Kết quả"},
         title=title,
     )
     figure.update_traces(
         texttemplate="%{text}",
         textposition="inside",
         hovertemplate=(
-            f"{y_label}=%{{y}}<br>Kết quả=%{{fullData.name}}"
-            "<br>Tỷ trọng=%{x:.1%}<br>N=%{customdata[0]:,}<extra></extra>"
+            "Nhóm=%{y}<br>Kết quả=%{fullData.name}<br>Tỷ trọng=%{x:.1%}"
+            "<br>N=%{customdata[0]:,}<extra></extra>"
         ),
     )
     figure.update_xaxes(tickformat=".0%", range=[0, 1])
-    figure.update_yaxes(
-        categoryorder="array", categoryarray=risk_order.index.tolist()
-    )
-    polish_figure(figure, height=470)
-    for group, rate in risk_order.items():
-        figure.add_annotation(
-            x=.995,
-            y=group,
-            xref="x",
-            yref="y",
-            text=f"Trượt {rate:.0%}",
-            showarrow=False,
-            xanchor="right",
-            bgcolor="rgba(255,255,255,.92)",
-            bordercolor="#CBD5E1",
-            borderpad=3,
-            font={"size": 11, "color": INK},
-        )
-    event = st.plotly_chart(
-        figure,
-        width="stretch",
-        on_select="rerun" if not selected_module else "ignore",
-        selection_mode="points",
-        key=(
-            f"outcome_drill_{selected_module or 'module'}_"
-            f"{st.session_state.get('outcome_key_version', 0)}"
-        ),
-    )
-    if not selected_module:
-        points = chart_points(event)
-        if points:
-            module = point_value(points[0], "y")
-            if module in valid_modules:
-                st.session_state["outcome_drill_module"] = str(module)
-                st.rerun()
+    figure.update_yaxes(categoryorder="array", categoryarray=group_order)
+    polish_figure(figure, height=height)
+    st.plotly_chart(figure, width="stretch")
     st.caption(
-        "Mỗi thanh luôn bằng 100%. Học phần có tỷ lệ trượt cao hơn nằm phía dưới; "
-        "Fail và Withdrawn được hiển thị thành hai phần riêng. B = bắt đầu tháng 2, J = bắt đầu tháng 10."
+        "Mỗi thanh bằng 100%; tỷ lệ và N được ghi trực tiếp. "
+        "Nút phân tích sâu chuyển từ tổng thể sang một yếu tố có ý nghĩa diễn giải."
     )
 
 
 def render_vle_timeline(
     frame: pd.DataFrame,
-    modules: list[str],
-    presentations: list[str],
     genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
     regions: list[str],
 ) -> tuple[float, float]:
     daily = dashboard_mart(
@@ -549,13 +559,19 @@ def render_vle_timeline(
             "code_module",
             "code_presentation",
             "gender",
+            "age_band",
+            "highest_education",
+            "imd_band",
             "region",
             "At_Risk",
             "date",
             "sum_click",
         ),
     )
-    daily = filter_mart(daily, modules, presentations, genders, regions)
+    daily = filter_context(
+        daily, genders, age_bands, education_levels, imd_bands, regions
+    )
+    daily = daily.loc[daily["date"].le(105)].copy()
     totals = frame.groupby("At_Risk").size().rename("attempts")
     daily = daily.groupby(["At_Risk", "date"], as_index=False)["sum_click"].sum()
     if daily.empty:
@@ -610,12 +626,7 @@ def render_vle_timeline(
             "weight",
         ),
     )
-    if modules:
-        deadlines = deadlines.loc[deadlines["code_module"].isin(modules)]
-    if presentations:
-        deadlines = deadlines.loc[
-            deadlines["code_presentation"].isin(presentations)
-        ]
+    deadlines = deadlines.loc[deadlines["due_date"].le(105)].copy()
     milestones = (
         deadlines.dropna(subset=["due_date"])
         .groupby("due_date", as_index=False)["weight"]
@@ -643,9 +654,10 @@ def render_vle_timeline(
 
 
 def render_submission_scatter(
-    modules: list[str],
-    presentations: list[str],
     genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
     regions: list[str],
 ) -> float:
     submissions = dashboard_mart(
@@ -653,9 +665,11 @@ def render_submission_scatter(
         (
             "code_module",
             "code_presentation",
-            "id_student",
             "date_submitted",
             "gender",
+            "age_band",
+            "highest_education",
+            "imd_band",
             "region",
             "num_of_prev_attempts",
             "At_Risk",
@@ -663,8 +677,8 @@ def render_submission_scatter(
             "score",
         ),
     )
-    submissions = filter_mart(
-        submissions, modules, presentations, genders, regions
+    submissions = filter_context(
+        submissions, genders, age_bands, education_levels, imd_bands, regions
     )
     submissions = submissions.loc[submissions["date_submitted"].le(105)].dropna(
         subset=["submission_delay", "score"]
@@ -680,21 +694,13 @@ def render_submission_scatter(
         (1, "Trượt"),
     ):
         group = sample.loc[sample["At_Risk"].eq(at_risk)]
-        custom = np.column_stack(
-            [
-                group["id_student"],
-                group["num_of_prev_attempts"],
-                group["code_module"],
-                group["code_presentation"],
-            ]
-        )
         figure.add_trace(
             go.Scattergl(
                 x=group["submission_delay"],
                 y=group["score"],
                 mode="markers",
                 name=label,
-                customdata=custom,
+                customdata=group[["num_of_prev_attempts"]],
                 marker={
                     "size": 7 + 2 * group["num_of_prev_attempts"].clip(upper=6),
                     "color": RISK_COLORS[label],
@@ -702,9 +708,8 @@ def render_submission_scatter(
                     "line": {"color": "#FFFFFF", "width": .4},
                 },
                 hovertemplate=(
-                    "Student=%{customdata[0]}<br>Module=%{customdata[2]}-%{customdata[3]}"
-                    "<br>Trễ=%{x:.0f} ngày<br>Điểm=%{y:.1f}"
-                    "<br>Lần học trước=%{customdata[1]:.0f}<extra></extra>"
+                    "Nộp trễ=%{x:.0f} ngày<br>Điểm=%{y:.1f}"
+                    "<br>Số lần từng học=%{customdata[0]:.0f}<extra></extra>"
                 ),
             )
         )
@@ -752,61 +757,101 @@ def render_submission_scatter(
     return correlation
 
 
-def render_activity_treemap(
-    modules: list[str],
-    presentations: list[str],
+def render_activity_comparison(
     genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
     regions: list[str],
 ) -> tuple[str, float]:
     activity = dashboard_mart(
-        "vle_activity_summary.csv.gz",
+        "vle_activity_summary_day105.csv.gz",
         (
             "code_module",
             "code_presentation",
             "gender",
+            "age_band",
+            "highest_education",
+            "imd_band",
             "region",
             "activity_type",
+            "At_Risk",
             "sum_click",
         ),
     )
-    activity = filter_mart(activity, modules, presentations, genders, regions)
-    activity = activity.groupby("activity_type", as_index=False)["sum_click"].sum()
+    activity = filter_context(
+        activity, genders, age_bands, education_levels, imd_bands, regions
+    )
+    activity = activity.groupby(
+        ["At_Risk", "activity_type"], as_index=False
+    )["sum_click"].sum()
     if activity.empty:
         st.info("Không có click VLE trong phạm vi lọc.")
         return "—", float("nan")
-    total = activity["sum_click"].sum()
-    activity["share"] = activity["sum_click"] / total
-    figure = px.treemap(
-        activity,
-        path=[px.Constant("Tất cả tài nguyên VLE"), "activity_type"],
-        values="sum_click",
-        color="sum_click",
-        color_continuous_scale=["#DBEAFE", "#2563EB", "#1E3A8A"],
-        custom_data=["sum_click", "share"],
-        title="7 · Loại tài nguyên học trực tuyến nào được sử dụng nhiều nhất?",
+    activity["share"] = activity["sum_click"] / activity.groupby("At_Risk")[
+        "sum_click"
+    ].transform("sum")
+    activity["Nhóm kết quả"] = activity["At_Risk"].map(
+        {0: "Qua môn / Xuất sắc", 1: "Trượt"}
+    )
+    top_types = (
+        activity.groupby("activity_type")["sum_click"]
+        .sum()
+        .nlargest(8)
+        .index
+    )
+    display = activity.loc[activity["activity_type"].isin(top_types)].copy()
+    type_order = (
+        display.groupby("activity_type")["share"].max().sort_values().index.tolist()
+    )
+    figure = px.bar(
+        display,
+        x="share",
+        y="activity_type",
+        color="Nhóm kết quả",
+        orientation="h",
+        barmode="group",
+        category_orders={
+            "activity_type": type_order,
+            "Nhóm kết quả": ["Qua môn / Xuất sắc", "Trượt"],
+        },
+        color_discrete_map=RISK_COLORS,
+        custom_data=["sum_click"],
+        text="share",
+        labels={
+            "share": "Tỷ trọng trong tổng tương tác của mỗi nhóm",
+            "activity_type": "Loại tài nguyên VLE",
+        },
+        title="7 · Hai nhóm sử dụng tài nguyên học trực tuyến khác nhau thế nào?",
     )
     figure.update_traces(
-        marker={"line": {"color": "#FFFFFF", "width": 1.5}},
-        texttemplate="<b>%{label}</b><br>%{customdata[1]:.1%}",
+        texttemplate="%{text:.1%}",
+        textposition="outside",
         hovertemplate=(
-            "Loại=%{label}<br>Clicks=%{customdata[0]:,}"
-            "<br>Tỷ trọng=%{customdata[1]:.1%}<extra></extra>"
+            "Loại=%{y}<br>Nhóm=%{fullData.name}<br>Tỷ trọng=%{x:.2%}"
+            "<br>Clicks=%{customdata[0]:,}<extra></extra>"
         ),
     )
-    figure.update_layout(coloraxis_showscale=False)
-    polish_figure(figure, height=520, legend="none")
+    figure.update_xaxes(tickformat=".0%")
+    polish_figure(figure, height=570)
     st.plotly_chart(figure, width="stretch")
     st.caption(
-        "Diện tích và độ đậm đều biểu diễn tổng lượt click; tỷ trọng tính trong phạm vi lọc hiện tại."
+        "Tỷ trọng được chuẩn hóa riêng trong từng nhóm kết quả, nhờ đó biểu đồ so sánh "
+        "cách phân bổ hoạt động thay vì chỉ cho biết loại tài nguyên nào có nhiều click nhất."
     )
-    top = activity.sort_values("sum_click", ascending=False).iloc[0]
-    return str(top["activity_type"]), float(top["share"])
+    pivot = activity.pivot(
+        index="activity_type", columns="At_Risk", values="share"
+    ).fillna(0)
+    pivot["gap"] = pivot.get(1, 0) - pivot.get(0, 0)
+    largest = pivot["gap"].abs().idxmax()
+    return str(largest), float(pivot.loc[largest, "gap"])
 
 
 def comparison_message(
     frame: pd.DataFrame,
     group_column: str,
     label: str,
+    display_labels: dict[str, str] | None = None,
 ) -> str:
     grouped = (
         frame.groupby(group_column, observed=True)["At_Risk"]
@@ -817,15 +862,21 @@ def comparison_message(
         return f"Không đủ dữ liệu để so sánh theo {label}."
     if len(grouped) == 1:
         row = grouped.iloc[0]
+        group = grouped.index[0]
+        display = (display_labels or {}).get(str(group), str(group))
         return (
-            f"{label} {grouped.index[0]} có tỷ lệ trượt {row['mean']:.1%} "
+            f"{label} {display} có tỷ lệ trượt {row['mean']:.1%} "
             f"(N={int(row['size']):,})."
         )
     low, high = grouped.iloc[0], grouped.iloc[-1]
+    high_group = str(grouped.index[-1])
+    low_group = str(grouped.index[0])
+    high_display = (display_labels or {}).get(high_group, high_group)
+    low_display = (display_labels or {}).get(low_group, low_group)
     return (
-        f"Tỷ lệ trượt theo {label.lower()} cao nhất ở {grouped.index[-1]} "
+        f"Tỷ lệ trượt theo {label.lower()} cao nhất ở {high_display} "
         f"({high['mean']:.1%}, N={int(high['size']):,}) và thấp nhất ở "
-        f"{grouped.index[0]} ({low['mean']:.1%}, N={int(low['size']):,})."
+        f"{low_display} ({low['mean']:.1%}, N={int(low['size']):,})."
     )
 
 
@@ -835,31 +886,33 @@ def render_score_distribution(frame: pd.DataFrame) -> None:
     if data.empty:
         st.info("Không có điểm bài tập/kiểm tra trong phạm vi lọc.")
         return
-    figure = px.histogram(
+    data["Kết quả"] = data["final_result"].map(RESULT_LABELS)
+    result_order = [RESULT_LABELS[value] for value in RESULT_ORDER]
+    figure = px.violin(
         data,
-        x="assessment_score_mean_all_time",
-        color="final_result",
-        category_orders={"final_result": RESULT_ORDER},
-        color_discrete_map=RESULT_COLORS,
-        nbins=20,
-        barmode="overlay",
-        opacity=.68,
+        x="Kết quả",
+        y="assessment_score_mean_all_time",
+        color="Kết quả",
+        category_orders={"Kết quả": result_order},
+        color_discrete_map={
+            RESULT_LABELS[key]: value for key, value in RESULT_COLORS.items()
+        },
+        box=True,
+        points=False,
         labels={
             "assessment_score_mean_all_time": "Điểm bài tập/kiểm tra trung bình",
-            "count": "Số lượt học",
-            "final_result": "Kết quả cuối",
         },
-        title="3 · Phân bố điểm quá trình theo kết quả cuối",
+        title="3 · Điểm quá trình phân bố thế nào trong từng kết quả cuối?",
     )
     figure.update_traces(
-        hovertemplate="Khoảng điểm=%{x}<br>Số lượt=%{y:,}<extra></extra>"
+        hovertemplate="Kết quả=%{x}<br>Điểm=%{y:.1f}<extra></extra>"
     )
-    figure.update_xaxes(range=[0, 100])
-    polish_figure(figure, height=470)
+    figure.update_yaxes(range=[0, 100])
+    polish_figure(figure, height=500, legend="none")
     st.plotly_chart(figure, width="stretch")
     st.caption(
         f"Có {len(data):,}/{len(frame):,} lượt học có ít nhất một điểm được chấm. "
-        "Biểu đồ bổ sung thước đo điểm quá trình bên cạnh kết quả cuối Pass/Fail/Withdrawn."
+        "Bề rộng thể hiện nơi dữ liệu tập trung; hộp bên trong thể hiện trung vị và khoảng 25%–75%."
     )
 
 
@@ -867,21 +920,22 @@ def render_overview_page() -> None:
     render_header(
         "Trang 1 · Bức tranh kết quả học tập",
         "Sinh viên đang đạt kết quả như thế nào?",
-        "Nhìn tổng thể kết quả, sau đó so sánh giữa học phần và khu vực cư trú.",
-        "Phạm vi mô tả toàn khóa · một dòng = một lượt học của sinh viên trong một học phần–đợt mở",
+        "Bắt đầu từ cơ cấu tổng thể, sau đó xem kết quả thay đổi theo vùng và nền tảng đầu vào.",
+        "Phạm vi mô tả toàn khóa · một dòng = một lượt đăng ký học",
     )
     render_term_guide(
         [
-            ("AAA–GGG", "mã học phần đã được OULAD ẩn danh, không phải tên môn thật"),
-            ("B/J", "đợt học bắt đầu tháng 2/tháng 10"),
+            ("Xuất sắc", "Distinction, mức kết quả cao hơn Qua môn"),
             ("Trượt học phần", "kết quả cuối là Fail; rút học được tách riêng"),
-            ("Lượt học", "một sinh viên trong một học phần–đợt mở"),
+            ("Lượt học", "một lần đăng ký học; một sinh viên có thể xuất hiện nhiều lần"),
         ]
     )
     frame = analysis_data()
-    modules, presentations, genders = page_one_filters(frame)
-    base = filter_attempts(
-        frame, modules=modules, presentations=presentations, genders=genders
+    genders, age_bands, education_levels, imd_bands = context_filters(
+        frame, key_prefix="overview"
+    )
+    base = filter_context(
+        frame, genders, age_bands, education_levels, imd_bands, []
     )
     if base.empty:
         st.warning("Bộ lọc hiện tại không có lượt học.")
@@ -892,8 +946,13 @@ def render_overview_page() -> None:
     if active_region not in valid_regions:
         active_region = None
         st.session_state["academic_region"] = None
-    effective = filter_attempts(
-        base, regions=[active_region] if active_region else None
+    effective = filter_context(
+        base,
+        [],
+        [],
+        [],
+        [],
+        [active_region] if active_region else [],
     )
 
     if active_region:
@@ -923,33 +982,33 @@ def render_overview_page() -> None:
         "STORY · Nhận định chính",
         [
             f"Cứ 100 lượt học thì khoảng {fail_rate * 100:.0f} lượt trượt; rút học là một kết quả khác và chiếm {withdrawn_rate:.1%}.",
-            comparison_message(effective, "code_module", "Học phần ẩn danh"),
-            comparison_message(base, "region", "Vùng")
-            + " Học phần và khu vực chỉ cho biết bối cảnh có chênh lệch, không chứng minh đó là nguyên nhân.",
+            comparison_message(
+                effective,
+                "highest_education",
+                "Trình độ trước khi nhập học",
+                EDUCATION_LABELS,
+            ),
+            comparison_message(base, "region", "Vùng cư trú")
+            + " Bản đồ giúp xác định nơi chênh lệch tập trung để đối chiếu thêm với điều kiện kinh tế–xã hội.",
         ],
     )
 
-    st.subheader("Kết quả khác nhau ở đâu?")
+    st.subheader("Kết quả tổng thể và sự khác biệt theo bối cảnh")
+    render_outcome_overview(effective)
     render_region_map(base, active_region)
-    render_outcome_drill(effective)
     render_score_distribution(effective)
 
 
 def filter_snapshot_context(
     frame: pd.DataFrame,
-    modules: list[str],
-    presentations: list[str],
     genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
 ) -> pd.DataFrame:
-    mask = pd.Series(True, index=frame.index)
-    for column, values in (
-        ("code_module", modules),
-        ("code_presentation", presentations),
-        ("gender", genders),
-    ):
-        if values:
-            mask &= frame[column].isin(values)
-    return frame.loc[mask].copy()
+    return filter_context(
+        frame, genders, age_bands, education_levels, imd_bands, []
+    )
 
 
 def add_behavior_bands(frame: pd.DataFrame) -> pd.DataFrame:
@@ -1034,12 +1093,14 @@ def render_behavior_page() -> None:
         ]
     )
     frame = analysis_data()
-    modules, presentations, genders = page_one_filters(frame)
-    filtered = filter_attempts(
-        frame, modules=modules, presentations=presentations, genders=genders
+    genders, age_bands, education_levels, imd_bands = context_filters(
+        frame, key_prefix="behavior"
+    )
+    filtered = filter_context(
+        frame, genders, age_bands, education_levels, imd_bands, []
     )
     snapshot = filter_snapshot_context(
-        feature_snapshot(), modules, presentations, genders
+        feature_snapshot(), genders, age_bands, education_levels, imd_bands
     )
     if filtered.empty or snapshot.empty:
         st.warning("Bộ lọc hiện tại không có đủ lượt học cho phân tích hành vi.")
@@ -1061,20 +1122,30 @@ def render_behavior_page() -> None:
         ],
     )
 
-    render_vle_timeline(filtered, modules, presentations, genders, [])
+    render_vle_timeline(
+        filtered, genders, age_bands, education_levels, imd_bands, []
+    )
     render_completion_chart(snapshot)
-    correlation = render_submission_scatter(modules, presentations, genders, [])
-    top_activity, top_share = render_activity_treemap(
-        modules, presentations, genders, []
+    correlation = render_submission_scatter(
+        genders, age_bands, education_levels, imd_bands, []
+    )
+    activity_type, activity_gap = render_activity_comparison(
+        genders, age_bands, education_levels, imd_bands, []
     )
     delay_message = (
         "nộp càng trễ thường đi cùng điểm thấp hơn"
         if pd.notna(correlation) and correlation < 0
         else "chưa thấy xu hướng rõ giữa thời điểm nộp và điểm"
     )
+    activity_group = (
+        "nhóm Trượt"
+        if activity_gap > 0
+        else "nhóm Qua môn/Xuất sắc"
+    )
     st.info(
-        f"Đọc thêm: {delay_message}; loại tài nguyên được dùng nhiều nhất là "
-        f"{top_activity} ({top_share:.1%} tổng click trong phạm vi lọc)."
+        f"Đọc thêm: {delay_message}. Với tài nguyên `{activity_type}`, {activity_group} "
+        f"có tỷ trọng sử dụng cao hơn {abs(activity_gap):.1%}. Chênh lệch loại tài nguyên "
+        "nhỏ hơn nhiều so với chênh lệch về hoàn thành bài và mức hoạt động, nên loại tài nguyên là yếu tố phụ."
     )
 
 
@@ -1111,6 +1182,7 @@ def prepare_risk_frame() -> pd.DataFrame:
 def prepare_interaction_frame() -> pd.DataFrame:
     columns = ATTEMPT_KEY + [
         "gender",
+        "age_band",
         "highest_education",
         "imd_band",
         "num_of_prev_attempts",
@@ -1211,38 +1283,7 @@ def render_engagement_assessment_heatmap(
     return low_rate, low_n, high_rate, high_n
 
 
-def imd_sort_key(value: str) -> tuple[int, str]:
-    if value == "Không xác định":
-        return (999, value)
-    try:
-        return (int(value.split("-")[0].replace("%", "")), value)
-    except ValueError:
-        return (998, value)
-
-
-def page_two_filters(frame: pd.DataFrame) -> tuple[list[str], list[str]]:
-    st.subheader("Bộ lọc danh sách hỗ trợ")
-    columns = st.columns(2)
-    levels = columns[0].multiselect(
-        "Mức nguy cơ dự đoán",
-        LEVEL_ORDER,
-        format_func=lambda value: LEVEL_LABELS[value],
-        key="risk_levels",
-        placeholder="Tất cả mức rủi ro",
-    )
-    imd_options = sorted(
-        frame["imd_band"].astype(str).unique(), key=imd_sort_key
-    )
-    imd_bands = columns[1].multiselect(
-        "Mức khó khăn kinh tế–xã hội của khu vực",
-        imd_options,
-        key="risk_imd_bands",
-        placeholder="Tất cả nhóm khu vực",
-    )
-    return levels, imd_bands
-
-
-def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, int]:
+def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, float]:
     accuracy = frame["actual_at_risk"].eq(frame["predicted_at_risk"]).mean()
     actual_positive = frame["actual_at_risk"].eq(1)
     recall = (
@@ -1250,12 +1291,17 @@ def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, int]:
         if actual_positive.any()
         else float("nan")
     )
-    high_count = int(frame["risk_level"].eq("High").sum())
+    predicted_positive = frame["predicted_at_risk"].eq(1)
+    precision = (
+        frame.loc[predicted_positive, "actual_at_risk"].eq(1).mean()
+        if predicted_positive.any()
+        else float("nan")
+    )
     cards = st.columns(3)
     cards[0].metric("Tỷ lệ dự đoán đúng", format_percent(accuracy))
     cards[1].metric("Tỷ lệ phát hiện lượt trượt", format_percent(recall))
-    cards[2].metric("Lượt cần ưu tiên hỗ trợ", f"{high_count:,}")
-    return float(accuracy), float(recall), high_count
+    cards[2].metric("Tỷ lệ cảnh báo trượt chính xác", format_percent(precision))
+    return float(accuracy), float(recall), float(precision)
 
 
 def render_interaction_heatmap(
@@ -1269,8 +1315,11 @@ def render_interaction_heatmap(
         )
         .reset_index()
     )
+    grouped["education_label"] = grouped["highest_education"].map(
+        EDUCATION_LABELS
+    ).fillna("Không xác định")
     education_order = [
-        value
+        EDUCATION_LABELS.get(value, value)
         for value in [
             "No Formal quals",
             "Lower Than A Level",
@@ -1285,11 +1334,11 @@ def render_interaction_heatmap(
         grouped["imd_band"].astype(str).unique(), key=imd_sort_key
     )
     rate = grouped.pivot(
-        index="highest_education", columns="imd_band", values="at_risk_rate"
+        index="education_label", columns="imd_band", values="at_risk_rate"
     ).reindex(index=education_order, columns=imd_order)
     count = (
         grouped.pivot(
-            index="highest_education", columns="imd_band", values="attempts"
+            index="education_label", columns="imd_band", values="attempts"
         )
         .reindex(index=education_order, columns=imd_order)
         .fillna(0)
@@ -1404,8 +1453,12 @@ def render_interaction_page() -> None:
         ]
     )
     base = prepare_interaction_frame()
-    modules, presentations, genders = page_one_filters(base)
-    frame = filter_snapshot_context(base, modules, presentations, genders)
+    genders, age_bands, education_levels, imd_bands = context_filters(
+        base, key_prefix="interaction"
+    )
+    frame = filter_snapshot_context(
+        base, genders, age_bands, education_levels, imd_bands
+    )
     if frame.empty:
         st.warning("Bộ lọc hiện tại không có lượt học trong snapshot ngày 105.")
         return
@@ -1452,166 +1505,120 @@ def render_interaction_page() -> None:
     render_attempt_boxplot(frame)
 
 
-def render_risk_gauge(frame: pd.DataFrame) -> float:
-    mean_probability = float(frame["risk_probability"].mean())
-    threshold = float(frame["prediction_threshold"].iloc[0])
-    medium_floor = threshold / 2
-    figure = go.Figure(
-        go.Indicator(
-            mode="gauge+number",
-            value=mean_probability * 100,
-            number={"suffix": "%", "valueformat": ".1f", "font": {"size": 44}},
-            title={"text": "Xác suất trượt trung bình", "font": {"size": 18}},
-            gauge={
-                "axis": {
-                    "range": [0, 100],
-                    "tickvals": [0, 20, 40, 60, 80, 100],
-                    "ticktext": ["0%", "20%", "40%", "60%", "80%", "100%"],
-                },
-                "bar": {"color": INK, "thickness": .28},
-                "steps": [
-                    {"range": [0, medium_floor * 100], "color": "#BBF7D0"},
-                    {"range": [medium_floor * 100, threshold * 100], "color": "#FDE68A"},
-                    {"range": [threshold * 100, 100], "color": "#FCA5A5"},
-                ],
-                "threshold": {
-                    "line": {"color": "#7C3AED", "width": 4},
-                    "thickness": .8,
-                    "value": threshold * 100,
-                },
-            },
+def render_probability_validation(frame: pd.DataFrame) -> tuple[float, float]:
+    data = frame.copy()
+    bin_count = min(10, max(2, data["risk_probability"].nunique()))
+    labels = [f"Nhóm {value}" for value in range(1, bin_count + 1)]
+    data["probability_group"] = pd.qcut(
+        data["risk_probability"].rank(method="first"),
+        q=bin_count,
+        labels=labels,
+    )
+    grouped = (
+        data.groupby("probability_group", observed=True)
+        .agg(
+            predicted_probability=("risk_probability", "mean"),
+            actual_fail_rate=("actual_at_risk", "mean"),
+            attempts=("actual_at_risk", "size"),
+        )
+        .reset_index()
+    )
+    figure = go.Figure()
+    figure.add_trace(
+        go.Bar(
+            x=grouped["probability_group"],
+            y=grouped["actual_fail_rate"],
+            name="Tỷ lệ trượt thực tế",
+            marker_color="#DC2626",
+            customdata=grouped[["attempts"]],
+            text=grouped["actual_fail_rate"],
+            texttemplate="%{text:.0%}",
+            textposition="outside",
+            hovertemplate=(
+                "%{x}<br>Trượt thực tế=%{y:.1%}<br>N=%{customdata[0]:,}<extra></extra>"
+            ),
         )
     )
-    figure.update_layout(title="11 · Xác suất trượt của nhóm đang xem")
-    polish_figure(figure, height=430, legend="none")
-    figure.update_layout(margin={"l": 50, "r": 60, "t": 78, "b": 45})
-    st.plotly_chart(figure, width="stretch")
-    st.caption(
-        f"Mức ưu tiên: thấp dưới {medium_floor:.1%}, trung bình từ {medium_floor:.1%} "
-        f"đến dưới {threshold:.1%}, cao từ {threshold:.1%}. Vạch tím là ngưỡng phân loại "
-        "đã chọn trên tập validation, không phải điểm đạt/trượt của môn học."
+    figure.add_trace(
+        go.Scatter(
+            x=grouped["probability_group"],
+            y=grouped["predicted_probability"],
+            name="Xác suất model dự báo",
+            mode="lines+markers",
+            line={"color": "#2563EB", "width": 3},
+            marker={"size": 9},
+            hovertemplate="%{x}<br>Xác suất dự báo=%{y:.1%}<extra></extra>",
+        )
     )
-    return mean_probability
-
-
-def render_error_donut(frame: pd.DataFrame) -> tuple[int, int, int, int]:
-    counts = frame["error_type"].value_counts()
-    order = ["TP", "TN", "FP", "FN"]
-    labels = {
-        "TP": "Cảnh báo đúng lượt trượt",
-        "TN": "Nhận diện đúng lượt qua môn",
-        "FP": "Cảnh báo nhầm",
-        "FN": "Bỏ sót lượt trượt",
-    }
-    colors = {
-        "TP": "#DC2626",
-        "TN": "#2563EB",
-        "FP": "#F59E0B",
-        "FN": "#7F1D1D",
-    }
-    data = pd.DataFrame(
-        {"error_type": order, "count": [int(counts.get(value, 0)) for value in order]}
-    )
-    data["label"] = data["error_type"].map(labels)
-    figure = px.pie(
-        data,
-        values="count",
-        names="label",
-        hole=.56,
-        color="error_type",
-        color_discrete_map=colors,
-        category_orders={"error_type": order},
-        title="12 · Đối chiếu dự đoán với kết quả thật",
-    )
-    figure.update_traces(
-        textposition="inside",
-        texttemplate="%{percent:.0%}",
-        hovertemplate=(
-            "%{label}<br>N=%{value:,}<br>Tỷ trọng=%{percent:.1%}<extra></extra>"
-        ),
-        marker={"line": {"color": "#FFFFFF", "width": 2}},
-    )
-    polish_figure(figure, height=500)
     figure.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -.08,
-            "xanchor": "left",
-            "x": 0,
-            "title_text": "",
-        },
-        margin={"l": 40, "r": 35, "t": 78, "b": 110},
+        title="11 · Nguy cơ dự báo cao hơn có đi cùng tỷ lệ trượt thực tế cao hơn?",
+        xaxis_title="Từ 10% xác suất thấp nhất đến 10% cao nhất",
+        yaxis_title="Tỷ lệ / xác suất trượt",
+        barmode="overlay",
     )
+    figure.update_yaxes(tickformat=".0%", range=[0, 1.08])
+    polish_figure(figure, height=500)
     st.plotly_chart(figure, width="stretch")
-    tp, tn, fp, fn = (int(counts.get(value, 0)) for value in order)
+    low_rate = float(grouped.iloc[0]["actual_fail_rate"])
+    high_rate = float(grouped.iloc[-1]["actual_fail_rate"])
     st.caption(
-        f"Cảnh báo đúng lượt trượt: {tp:,} · nhận diện đúng lượt qua môn: {tn:,} · "
-        f"cảnh báo nhầm: {fp:,} · bỏ sót: {fn:,}."
+        f"Nhóm xác suất thấp nhất có {low_rate:.1%} trượt thực tế; nhóm cao nhất là "
+        f"{high_rate:.1%}. Cột đỏ là kết quả thật, đường xanh là xác suất model dự báo."
+    )
+    return low_rate, high_rate
+
+
+def render_confusion_matrix(frame: pd.DataFrame) -> tuple[int, int, int, int]:
+    counts = frame["error_type"].value_counts()
+    tp, tn, fp, fn = (
+        int(counts.get(value, 0)) for value in ["TP", "TN", "FP", "FN"]
+    )
+    matrix = np.array([[tn, fp], [fn, tp]])
+    row_totals = matrix.sum(axis=1, keepdims=True)
+    row_rates = np.divide(
+        matrix,
+        row_totals,
+        out=np.zeros_like(matrix, dtype=float),
+        where=row_totals != 0,
+    )
+    text = np.array(
+        [
+            [
+                f"{matrix[row, column]:,}<br>{row_rates[row, column]:.1%}"
+                for column in range(2)
+            ]
+            for row in range(2)
+        ]
+    )
+    figure = go.Figure(
+        go.Heatmap(
+            z=row_rates,
+            x=["Dự báo qua môn", "Dự báo trượt"],
+            y=["Thực tế qua môn", "Thực tế trượt"],
+            text=text,
+            texttemplate="%{text}",
+            customdata=matrix,
+            colorscale=[[0, "#EFF6FF"], [1, "#1D4ED8"]],
+            zmin=0,
+            zmax=1,
+            colorbar={"title": "Tỷ lệ trong<br>kết quả thật", "tickformat": ".0%"},
+            hovertemplate=(
+                "%{y}<br>%{x}<br>N=%{customdata:,}<br>Tỷ lệ=%{z:.1%}<extra></extra>"
+            ),
+        )
+    )
+    figure.update_layout(
+        title="12 · Model dự báo đúng và sai ở đâu?",
+        xaxis_title="Kết quả model dự báo",
+        yaxis_title="Kết quả thực tế",
+    )
+    polish_figure(figure, height=500, legend="none")
+    st.plotly_chart(figure, width="stretch")
+    st.caption(
+        f"Phát hiện đúng {tp:,} lượt trượt, bỏ sót {fn:,}; nhận diện đúng {tn:,} lượt "
+        f"qua môn và cảnh báo nhầm {fp:,}. Phần trăm được tính trong từng hàng kết quả thật."
     )
     return tp, tn, fp, fn
-
-
-def render_action_table(frame: pd.DataFrame) -> None:
-    title, action = st.columns([4, 1])
-    title.subheader("Danh sách sinh viên cần xem xét hỗ trợ")
-
-    def select_high_risk() -> None:
-        st.session_state["risk_levels"] = ["High"]
-
-    action.button(
-        "Chỉ xem mức nguy cơ cao",
-        key="select_high_risk_action",
-        on_click=select_high_risk,
-        width="stretch",
-        help="Một click để lọc toàn bộ Trang 4 về nhóm đã vượt ngưỡng dự báo trượt.",
-    )
-    candidates = frame.loc[frame["risk_level"].eq("High")].sort_values(
-        "risk_probability", ascending=False
-    )
-    if candidates.empty:
-        st.info("Bộ lọc hiện tại không có lượt học ở mức cảnh báo cao.")
-        return
-    table = candidates[
-        [
-            "id_student",
-            "code_module",
-            "code_presentation",
-            "imd_band",
-            "risk_probability",
-            "predicted_status",
-        ]
-    ].head(100).rename(
-        columns={
-            "id_student": "Mã sinh viên",
-            "code_module": "Học phần",
-            "code_presentation": "Đợt mở lớp",
-            "imd_band": "Nhóm khu vực",
-            "predicted_status": "Kết quả dự đoán",
-        }
-    )
-    table["Cảnh báo"] = table["risk_probability"].map(
-        lambda value: "🟥" * max(1, int(round(value * 10)))
-    )
-    st.dataframe(
-        table,
-        width="stretch",
-        hide_index=True,
-        height=420,
-        column_config={
-            "risk_probability": st.column_config.NumberColumn(
-                "Xác suất trượt", format="percent"
-            ),
-            "Cảnh báo": st.column_config.TextColumn(
-                "Mức cảnh báo",
-                help="Mỗi ô đỏ tương ứng khoảng 10 điểm phần trăm rủi ro.",
-            ),
-        },
-    )
-    st.caption(
-        f"Hiển thị tối đa 100/{len(candidates):,} lượt có cảnh báo cao trong phạm vi bộ lọc. "
-        "Danh sách giúp giảng viên biết nên kiểm tra và liên hệ ai trước."
-    )
 
 
 def render_model_factors() -> None:
@@ -1649,8 +1656,8 @@ def render_model_factors() -> None:
             "Đi cùng nguy cơ thấp hơn": "#0F766E",
         },
         custom_data=["odds_ratio"],
-        labels={"coefficient": "Hệ số Logistic Regression"},
-        title="13 · Những tín hiệu mô hình dùng để nhận diện nguy cơ trượt",
+        labels={"coefficient": "Mức liên hệ trong mô hình (0 = không đổi)"},
+        title="13 · Yếu tố nào đi cùng nguy cơ trượt cao hơn hoặc thấp hơn?",
     )
     figure.add_vline(x=0, line_color="#64748B", line_width=1)
     figure.update_traces(
@@ -1688,9 +1695,9 @@ def risk_profile_message(frame: pd.DataFrame) -> str:
 
 def render_prediction_page() -> None:
     render_header(
-        "Trang 4 · Dự đoán nguy cơ",
-        "Cảnh báo giữa khóa: lượt học nào có nguy cơ trượt?",
-        "Dùng dữ liệu đến ngày 105 để ước lượng xác suất kết quả cuối là Fail.",
+        "Trang 4 · Mô hình dự báo",
+        "Mô hình nhận diện nguy cơ trượt dựa trên yếu tố nào?",
+        "Đánh giá độ tin cậy và xác định các yếu tố liên quan đến Fail ở mức tổng hợp.",
         "Tập kiểm tra độc lập · Withdrawn không tham gia huấn luyện · dashboard không huấn luyện lại model",
     )
     render_term_guide(
@@ -1704,9 +1711,10 @@ def render_prediction_page() -> None:
     st.markdown(
         """
         <div class="definition-box"><b>Mô hình dự đoán gì?</b><br>
-        Với mỗi sinh viên trong một học phần–đợt mở, mô hình dùng thông tin đăng ký,
-        tiến độ bài tập và hoạt động VLE có đến ngày 105 để ước lượng xác suất kết quả cuối
-        là <b>Fail</b>. Pass và Distinction là nhóm đối chứng; Withdrawn được loại khỏi model.
+        Mô hình dùng thông tin đăng ký, tiến độ bài tập và hoạt động VLE có đến ngày 105
+        để ước lượng xác suất kết quả cuối là <b>Fail</b>. Pass và Distinction là nhóm đối chứng;
+        Withdrawn được loại khỏi model. Kết quả được tổng hợp để đánh giá độ tin cậy
+        và xác định những yếu tố liên quan nổi bật.
         Đây là <b>cảnh báo giữa khóa</b>, không phải dự đoán điểm số chính xác.</div>
         """,
         unsafe_allow_html=True,
@@ -1728,18 +1736,17 @@ def render_prediction_page() -> None:
         st.error(str(exc))
         return
 
-    levels, imd_bands = page_two_filters(base)
-    mask = pd.Series(True, index=base.index)
-    if levels:
-        mask &= base["risk_level"].isin(levels)
-    if imd_bands:
-        mask &= base["imd_band"].isin(imd_bands)
-    frame = base.loc[mask].copy()
+    genders, age_bands, education_levels, imd_bands = context_filters(
+        base, key_prefix="model"
+    )
+    frame = filter_context(
+        base, genders, age_bands, education_levels, imd_bands, []
+    )
     if frame.empty:
         st.warning("Bộ lọc hiện tại không có lượt học trong tập dữ liệu kiểm tra.")
         return
 
-    accuracy, recall, high_count = render_model_kpis(frame)
+    accuracy, recall, precision = render_model_kpis(frame)
     st.caption(
         f"Các chỉ số phía trên tính trên {len(frame):,} lượt học trong bộ lọc hiện tại. "
         f"Trên toàn bộ tập kiểm tra độc lập: Accuracy {test_metric['accuracy']:.1%} "
@@ -1750,25 +1757,22 @@ def render_prediction_page() -> None:
 
     fn = int(frame["error_type"].eq("FN").sum())
     render_story(
-        "STORY · Mô hình dự đoán điều gì?",
+        "STORY · Dự báo giúp hiểu yếu tố nào?",
         [
             f"Trong phạm vi đang xem, mô hình phân loại đúng khoảng {accuracy * 100:.0f}/100 lượt học và phát hiện khoảng {recall * 100:.0f}/100 lượt thực sự trượt.",
-            f"Có {high_count:,} lượt vượt ngưỡng cảnh báo trượt; vẫn còn {fn:,} lượt trượt bị bỏ sót, vì vậy không được dùng model như quyết định tự động.",
+            f"Trong 100 cảnh báo trượt, khoảng {precision * 100:.0f} cảnh báo đúng; mô hình còn bỏ sót {fn:,} lượt trượt trong phạm vi này.",
             risk_profile_message(frame),
-            "Hành động phù hợp là kiểm tra bài đến hạn, nhắc quay lại VLE và hỗ trợ nội dung còn yếu; không dùng hoàn cảnh cá nhân để quy kết.",
+            "Kết luận: gián đoạn hoạt động VLE, bỏ lỡ bài đến hạn và tích lũy điểm thấp là các yếu tố liên quan rõ nhất đến Fail; cải thiện cần tập trung vào duy trì học đều và hoàn thành bài đúng hạn.",
         ],
     )
 
-    st.subheader("Kết quả dự đoán và danh sách ưu tiên hỗ trợ")
-    left, right = st.columns(2)
-    with left:
-        render_risk_gauge(frame)
-    with right:
-        render_error_donut(frame)
+    st.subheader("Độ tin cậy và các yếu tố liên quan đến dự báo Fail")
+    render_probability_validation(frame)
+    render_confusion_matrix(frame)
     render_model_factors()
-    render_action_table(frame)
     st.info(
-        "Danh sách là công cụ ưu tiên hỗ trợ; không dùng model để tự động quyết định kết quả hay xử phạt người học."
+        "Hướng cải thiện rút ra từ mô hình: duy trì hoạt động VLE đều, hoàn thành bài đến hạn "
+        "và củng cố điểm quá trình từ giữa khóa."
     )
 
 

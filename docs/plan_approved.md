@@ -6,7 +6,7 @@
 
 **Công nghệ duy nhất:** Python, Pandas, scikit-learn, Streamlit và Plotly
 
-**Quy tắc Git:** chỉ commit/push sau khi leader cung cấp repo mới và duyệt kết quả
+**Quy tắc Git:** chỉ commit/push thay đổi mới sau khi leader duyệt kết quả
 **Rubric:** giữ nguyên nội dung và tiêu chí; không sửa file rubric nguồn
 
 > **Kết quả triển khai:** đã audit 30/60/90/105; chỉ ngày 105 vượt toàn bộ cổng chất lượng nên sản phẩm gọi là **cảnh báo giữa khóa**. Model v5 dự báo Fail đạt Accuracy 83,68%, Recall Fail 75,55%, ROC-AUC 0,902 và 11/11 verification PASS. Dashboard bốn trang và 8 insight đã chuyển sang target Fail, tách Withdrawn.
@@ -42,7 +42,7 @@ VLE click chỉ là dấu vết sử dụng nền tảng, không phải giờ t�
 
 ## 3. Câu hỏi nghiên cứu
 
-1. Điểm số và kết quả cuối khác nhau thế nào giữa module, kỳ học và các nhóm sinh viên?
+1. Cơ cấu kết quả tổng thể ra sao và khác nhau thế nào theo vùng, học vấn đầu vào và các nhóm sinh viên?
 2. Học vấn trước đó, số lần học lại, tín chỉ và điều kiện kinh tế–xã hội liên quan thế nào đến kết quả?
 3. Nhóm `Pass/Distinction` và `Fail` có nhịp tương tác VLE khác nhau từ thời điểm nào?
 4. Hoàn thành assessment và nộp đúng hạn liên quan thế nào đến điểm và kết quả cuối?
@@ -53,14 +53,14 @@ VLE click chỉ là dấu vết sử dụng nền tảng, không phải giờ t�
 
 | ID | Nội dung phải kết luận | Vai trò |
 |---|---|---|
-| INS-01 | Cơ cấu Distinction/Pass/Fail/Withdrawn và khác biệt theo module/presentation | Bức tranh kết quả |
+| INS-01 | Cơ cấu Distinction/Pass/Fail/Withdrawn tổng thể và khác biệt theo học vấn đầu vào | Bức tranh kết quả |
 | INS-02 | Chênh lệch `Fail` theo mức hoàn thành assessment đến cutoff | Tiến độ học tập |
 | INS-03 | Liên hệ giữa điểm đầu khóa, nộp đúng/trễ và kết quả cuối | Hành vi làm bài |
 | INS-04 | Chênh lệch kết quả theo mức độ, tính liên tục và độ gián đoạn VLE | Mức tham gia học |
 | INS-05 | Rủi ro khi tương tác thấp, điểm sớm thấp và hoàn thành bài thấp cùng xuất hiện | Bất lợi cộng dồn |
 | INS-06 | Chênh lệch theo học vấn trước đó, số lần học lại và tải tín chỉ | Nền tảng học tập |
 | INS-07 | Chênh lệch theo IMD/region sau khi đặt trong cùng module/presentation | Bối cảnh kinh tế–địa lý |
-| INS-08 | Khác biệt cách sử dụng loại tài nguyên VLE giữa các nhóm kết quả | Chiến lược học tập |
+| INS-08 | Khác biệt về tỷ trọng sử dụng từng loại tài nguyên VLE giữa nhóm `Fail` và `Pass/Distinction` | Chiến lược học tập |
 
 Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử số/mẫu số, `N`, chênh lệch điểm phần trăm hoặc effect size, filter context, đường dẫn bằng chứng, giới hạn và đề xuất hành động. Không hard-code số liệu chưa được sinh từ pipeline.
 
@@ -70,9 +70,9 @@ Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử s�
 
 - KPI: tổng lượt học, điểm trung bình, tỷ lệ Pass/Distinction và tỷ lệ Fail.
 - Geographic Map theo 13 vùng, có `N`, bộ lọc và cross-filter.
-- 100% stacked bar: `Distinction/Pass/Fail/Withdrawn`, drill module → presentation.
-- Histogram phân phối điểm assessment.
-- Story: kết quả đang ra sao và khác biệt xuất hiện ở đâu; địa lý là bối cảnh, không phải nguyên nhân tự thân.
+- 100% stacked bar: `Distinction/Pass/Fail/Withdrawn` tổng thể, drill xuống học vấn đầu vào.
+- Violin + box phân phối điểm assessment theo kết quả cuối.
+- Story: kết quả đang ra sao và khác biệt xuất hiện theo học vấn/vùng ở đâu.
 
 ### Trang 2 — Hành vi học tập liên quan trực tiếp
 
@@ -80,7 +80,7 @@ Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử s�
 - Bar: tỷ lệ Fail theo mức hoàn thành assessment.
 - Scatter + trendline: thời điểm nộp bài và điểm.
 - Box plot: điểm theo mức tương tác hoặc lịch sử học lại.
-- Treemap/heatmap: loại tài nguyên VLE theo nhóm kết quả.
+- Grouped bar: tỷ trọng loại tài nguyên VLE theo nhóm kết quả.
 - Story: tiến độ làm bài, điểm đầu khóa và tính liên tục của hoạt động học là các tín hiệu gần kết quả nhất.
 
 ### Trang 3 — Nhiều yếu tố xuất hiện cùng lúc
@@ -93,11 +93,11 @@ Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử s�
 
 ### Trang 4 — Cảnh báo sớm nguy cơ Fail
 
-- KPI: Accuracy, Recall Fail và số lượt nguy cơ cao.
-- Gauge hoặc histogram xác suất Fail.
-- Confusion matrix/Donut cho đúng, cảnh báo nhầm và bỏ sót.
+- KPI: Accuracy, Recall Fail và Precision Fail.
+- Bar + line: xác suất dự báo và tỷ lệ `Fail` thật theo 10 nhóm.
+- Confusion matrix heatmap cho đúng, cảnh báo nhầm và bỏ sót.
 - ROC/PR curve trong phần kiểm định.
-- Bảng ưu tiên hỗ trợ và các tín hiệu làm xác suất tăng/giảm.
+- Bar hệ số cho các tín hiệu làm xác suất tăng/giảm.
 - Story: model ước lượng khả năng `Fail`, không dự đoán GPA hoặc điểm chính xác.
 
 Mạch Story chung:
@@ -111,17 +111,18 @@ Kết quả hiện tại → yếu tố đơn lẻ → bất lợi cộng dồn 
 - Tối thiểu 8 loại biểu đồ thường và một Geographic Map riêng.
 - Không dùng sunburst/drill-down hình tròn khó đọc.
 - Một biểu đồ chỉ trả lời một câu hỏi chính.
+- Mỗi biểu đồ phải nối một yếu tố với điểm/kết quả hoặc nối dự báo với kết quả thật; không dùng visual để liệt kê mã/danh mục/độ phổ biến đơn thuần.
 - Tiêu đề nêu nội dung; trục, đơn vị, legend và tooltip dùng tiếng Việt dễ hiểu.
 - Mọi tỷ lệ có `N` trong chart, caption hoặc tooltip.
 - Màu nhất quán: xanh cho kết quả tốt/an toàn, cam cho cần chú ý, đỏ cho Fail/nguy cơ cao, xám cho thiếu dữ liệu.
 - Không để title, legend, nhãn hoặc biểu đồ chèn lên nhau ở viewport trình chiếu.
 - Mỗi trang có một khối **Story** gồm 2–3 câu: kết luận, bằng chứng chính và hành động.
 - Chi tiết kỹ thuật/giới hạn nằm trong tooltip hoặc expander, không làm rối luồng chính.
-- Filter chung: module, presentation, region, giới tính, học vấn và IMD.
-- Drill-down: module → presentation → assessment.
+- Filter chung: region, giới tính, tuổi, học vấn và IMD.
+- Drill-down có ý nghĩa: cơ cấu tổng thể → học vấn đầu vào.
 - Map click phải cập nhật KPI và các visual liên quan.
 
-Inventory mục tiêu: Geographic Map, 100% stacked bar, histogram, multi-line, bar, scatter, box plot, heatmap, treemap, gauge, donut/confusion matrix và ROC/PR curve.
+Inventory hiện hành: Geographic Map, 100% stacked bar, violin, multi-line, bar, scatter, grouped bar, box plot, heatmap, probability validation, confusion matrix và diverging bar.
 
 ## 7. Mục đích và target dự báo
 
@@ -188,11 +189,11 @@ Dashboard phải trả lời rõ:
 1. Nhóm nào có xác suất Fail cao nhất?
 2. Tín hiệu nào liên quan mạnh nhất đến dự báo Fail?
 3. Trong 100 lượt thực sự Fail, model phát hiện và bỏ sót bao nhiêu?
-4. Nhóm được cảnh báo cần hỗ trợ gì?
+4. Các tín hiệu của nhóm cảnh báo cao gợi ý cần cải thiện điều gì?
 
 Ví dụ diễn giải đúng:
 
-> Tại checkpoint, lượt học có mức hoàn thành assessment thấp, điểm sớm thấp và hoạt động gần đây giảm tạo thành nhóm nguy cơ Fail cao. Đây là tín hiệu để ưu tiên kiểm tra và hỗ trợ, không phải bằng chứng các yếu tố đó chắc chắn gây ra Fail.
+> Tại checkpoint, mức hoàn thành assessment thấp, điểm sớm thấp và hoạt động gần đây giảm cùng xuất hiện trong nhóm nguy cơ Fail cao. Đây là bằng chứng về mối liên hệ ở cấp nhóm, không phải kết luận cho từng cá nhân hoặc bằng chứng nhân quả.
 
 Đề xuất hành động:
 
@@ -205,7 +206,7 @@ Ví dụ diễn giải đúng:
 
 Giữ lại: 7 bảng raw, pipeline audit/clean/join, processed base, dashboard marts, geometry/mapping 13 vùng, hạ tầng bootstrap/leakage guard/tests và kiến trúc bốn trang.
 
-Làm lại: target, cutoff, model artifacts, metric, insight theo outcome tách biệt, Story, action list, tài liệu còn nhắc Tableau, ảnh QA và báo cáo model.
+Làm lại: target, cutoff, model artifacts, metric, insight theo outcome tách biệt, Story, phân tích yếu tố tổng hợp, tài liệu còn nhắc Tableau, ảnh QA và báo cáo model.
 
 Model cũ và ảnh QA cũ chỉ được archive/xóa sau khi bản mới vượt kiểm định và leader duyệt.
 

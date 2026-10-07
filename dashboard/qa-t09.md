@@ -1,4 +1,4 @@
-# QA dashboard — target Academic Fail v5
+# QA dashboard — biểu đồ hướng insight v7
 
 Ngày kiểm tra: 07/10/2026. Trạng thái local, chưa commit.
 
@@ -16,15 +16,14 @@ Ngày kiểm tra: 07/10/2026. Trạng thái local, chưa commit.
 | Test Accuracy | 83,68% |
 | Test Recall Fail | 75,55% |
 | Threshold | 0,335 |
-| High trên test | 1.037 |
 
 ## Kiểm tra tự động
 
-- `python -m unittest discover -s tests -v`: **17/17 PASS**.
+- `python -m unittest discover -s tests -v`: **19/19 PASS**.
 - `at_risk_model.py validate`: **11/11 PASS**.
 - Streamlit AppTest: **4/4 trang, 0 exception**.
 - Số Plotly chart theo trang: **3 / 4 / 3 / 3**.
-- Browser QA Chrome headless: **4/4 trang, 0 exception**, đúng số chart.
+- Browser QA Microsoft Edge headless: **4/4 trang, 0 exception**, đúng số chart.
 
 ## Kiểm tra nghiệp vụ
 
@@ -35,13 +34,14 @@ Ngày kiểm tra: 07/10/2026. Trạng thái local, chưa commit.
 - Geographic Map dùng tỷ lệ Fail và cross-filter: PASS.
 - Submission scatter giới hạn `date_submitted <=105`: PASS.
 - 8 insight có evidence sinh tự động: PASS.
+- Mỗi chart nối yếu tố với kết quả hoặc dự báo với kết quả thật: PASS.
 - Rubric không bị chỉnh sửa: PASS.
 
 ## Ảnh bằng chứng hiện tại
 
-- [Trang 1](evidence/screenshots/overview-page-v5.png)
-- [Trang 2](evidence/screenshots/behavior-page-v5.png)
-- [Trang 3](evidence/screenshots/interaction-page-v5.png)
-- [Trang 4](evidence/screenshots/prediction-page-v5.png)
+- [Trang 1](evidence/screenshots/overview-page-v7.png)
+- [Trang 2](evidence/screenshots/behavior-page-v7.png)
+- [Trang 3](evidence/screenshots/interaction-page-v7.png)
+- [Trang 4 — model và yếu tố dự báo](evidence/screenshots/prediction-page-v7.png)
 
-Ảnh v2/v3/v4 là mốc lịch sử, không dùng để nghiệm thu target hiện tại.
+Ảnh v2–v6 là mốc lịch sử, không dùng để nghiệm thu bố cục hiện tại.

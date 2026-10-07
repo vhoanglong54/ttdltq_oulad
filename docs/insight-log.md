@@ -4,7 +4,7 @@
 
 ## Tóm tắt dễ trình bày
 
-1. **Kết quả khác nhau đáng kể giữa các lớp mở:** `GGG-2013J` có tỷ lệ Fail 30,88%, còn `AAA-2013J` là 11,75%.
+1. **Nền tảng học vấn đi cùng khác biệt rõ:** nhóm không có bằng cấp chính quy có tỷ lệ Fail 27,38%, còn nhóm sau đại học là 10,86%.
 2. **Mức tham gia VLE phân biệt kết quả rõ:** 25% ít click nhất có tỷ lệ Fail 58,25%; 25% nhiều click nhất 12,40%.
 3. **Hoàn thành bài đến hạn là tín hiệu mạnh nhất:** nhóm chưa hoàn thành bài nào có tỷ lệ Fail 95,88%; nhóm hoàn thành đủ 18,75%.
 4. **Hai bất lợi cộng dồn làm nhóm rủi ro nổi bật:** VLE thấp + điểm thấp có tỷ lệ Fail 65,56%; cao ở cả hai chỉ 4,58%.
@@ -17,7 +17,7 @@
 
 | ID | Claim có số liệu | N / phạm vi | Bằng chứng | Ý nghĩa hành động và giới hạn |
 |---|---|---|---|---|
-| INS-01 | `GGG-2013J` Fail **30,88%** (294/952), `AAA-2013J` **11,75%** (45/383), chênh **19,13 điểm %**. | Toàn khóa; chỉ Fail so với tổng outcome mô tả. | `module_presentation_risk.csv` | Cần so sánh trong từng module/presentation trước khi quy kết cá nhân; khác cấu trúc assessment/cohort. |
+| INS-01 | Không có bằng cấp chính quy Fail **27,38%** (N=347), sau đại học **10,86%** (N=313), chênh **16,51 điểm %**. | Toàn khóa, N=32.593 lượt học. | `insight_evidence.csv`, cơ cấu kết quả theo học vấn | Học vấn đi cùng nhiều khác biệt nền tảng khác; không phải tác động nhân quả độc lập. |
 | INS-02 | Quartile VLE click thấp nhất Fail **58,25%** (N=5.607), cao nhất **12,40%** (N=5.607), chênh **45,85 điểm %**. | Cohort model ngày 105, N=22.427. | `engagement_quartiles.csv`, VLE line | Ít dùng hệ thống là tín hiệu theo dõi; click không đo thời gian hay chất lượng học. |
 | INS-03 | Completion 0% Fail **95,88%** (N=1.382), completion 100% **18,75%** (N=17.569), chênh **77,12 điểm %**. | Assessment đã đến hạn tại ngày 105. | `assessment_completion.csv` | Ưu tiên nhắc bài đến hạn; lịch assessment khác nhau giữa module. |
 | INS-04 | VLE thấp + điểm thấp Fail **65,56%** (N=1.507), cao + cao **4,58%** (N=2.098), chênh **60,98 điểm %**. | Snapshot ngày 105, nhóm có điểm để xếp quartile. | `engagement_assessment_matrix.csv` | Dùng hai tín hiệu cùng lúc tốt hơn nhìn một chỉ số; không phải công thức nhân quả. |
@@ -28,11 +28,13 @@
 
 ## Story dùng khi thuyết trình
 
-1. Bắt đầu từ cơ cấu kết quả và cho thấy module/presentation/vùng có chênh lệch.
+1. Bắt đầu từ cơ cấu kết quả tổng thể và cho thấy học vấn đầu vào/vùng có chênh lệch.
 2. Đi vào yếu tố học tập: hoàn thành bài và tham gia VLE phân biệt nhóm Fail rõ nhất.
 3. Làm rõ rằng nộp muộn, gián đoạn hoạt động và lịch sử học lại là tín hiệu bổ sung.
 4. Kết hợp VLE thấp với điểm thấp để xác định nhóm bất lợi cộng dồn.
-5. Sau insight dữ liệu mới chuyển sang Logistic Regression: dự báo Fail ở ngày 105, kiểm tra sai số và lập danh sách hỗ trợ.
+5. Sau insight dữ liệu mới chuyển sang Logistic Regression: dự báo Fail ở ngày 105, kiểm tra sai số và giải thích các tín hiệu liên quan ở cấp nhóm.
+
+Insight bổ sung từ visual tài nguyên: chênh lệch lớn nhất trong cơ cấu tương tác là `forumng`; nhóm Qua môn/Xuất sắc dành tỷ trọng cao hơn nhóm Trượt khoảng **3,36 điểm %**. Mức chênh này nhỏ hơn nhiều so với completion và tính liên tục của hoạt động VLE, nên loại tài nguyên chỉ là tín hiệu phụ.
 
 ## Cách kiểm tra lại
 

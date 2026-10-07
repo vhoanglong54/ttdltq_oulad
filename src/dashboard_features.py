@@ -1,9 +1,8 @@
 """Build compact, reproducible data marts for the Streamlit dashboard.
 
 The dashboard must stay responsive and must not join the 8.4-million-row VLE
-event table during a user request.  This script performs those joins once and
-writes three compressed, documented tables at the grains needed by the two
-dashboard pages.
+event table during a user request. This script performs those joins once and
+writes compact, documented tables at the grains needed by the dashboard.
 """
 
 from __future__ import annotations
@@ -18,12 +17,21 @@ INTERIM_DIR = PROJECT_ROOT / "data" / "interim"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "processed" / "dashboard"
 
 ATTEMPT_KEY = ["code_module", "code_presentation", "id_student"]
-FILTER_COLUMNS = ["code_module", "code_presentation", "gender", "region"]
+FILTER_COLUMNS = [
+    "code_module",
+    "code_presentation",
+    "gender",
+    "age_band",
+    "highest_education",
+    "imd_band",
+    "region",
+]
 
 
 def _student_lookup() -> pd.DataFrame:
     columns = ATTEMPT_KEY + [
         "gender",
+        "age_band",
         "region",
         "highest_education",
         "imd_band",
@@ -68,6 +76,9 @@ def build_assessment_marts(student: pd.DataFrame) -> None:
             ATTEMPT_KEY
             + [
                 "gender",
+                "age_band",
+                "highest_education",
+                "imd_band",
                 "region",
                 "num_of_prev_attempts",
                 "final_result",
@@ -117,10 +128,27 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
 
     student_dimensions = student[
         ATTEMPT_KEY
-        + ["gender", "region", "final_result", "Academic_Fail", "Withdrawn_Flag", "At_Risk"]
+        + [
+            "gender",
+            "age_band",
+            "highest_education",
+            "imd_band",
+            "region",
+            "final_result",
+            "Academic_Fail",
+            "Withdrawn_Flag",
+            "At_Risk",
+        ]
     ]
     daily_parts: list[pd.DataFrame] = []
     activity_parts: list[pd.DataFrame] = []
+    cutoff_activity_parts: list[pd.DataFrame] = []
+    activity_group_columns = FILTER_COLUMNS + [
+        "final_result",
+        "Academic_Fail",
+        "At_Risk",
+        "activity_type",
+    ]
 
     for chunk in pd.read_csv(
         INTERIM_DIR / "studentVle.csv",
@@ -145,13 +173,23 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
                 FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "date"],
                 observed=True,
                 as_index=False,
+                dropna=False,
             )["sum_click"].sum()
         )
         activity_parts.append(
             enriched.groupby(
-                FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "activity_type"],
+                activity_group_columns,
                 observed=True,
                 as_index=False,
+                dropna=False,
+            )["sum_click"].sum()
+        )
+        cutoff_activity_parts.append(
+            enriched.loc[enriched["date"].le(105)].groupby(
+                activity_group_columns,
+                observed=True,
+                as_index=False,
+                dropna=False,
             )["sum_click"].sum()
         )
 
@@ -160,6 +198,7 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
         FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "date"],
         observed=True,
         as_index=False,
+        dropna=False,
     )["sum_click"].sum()
     daily.to_csv(
         OUTPUT_DIR / "vle_daily_profile.csv.gz", index=False, compression="gzip"
@@ -167,12 +206,26 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
 
     activity = pd.concat(activity_parts, ignore_index=True)
     activity = activity.groupby(
-        FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "activity_type"],
+        activity_group_columns,
         observed=True,
         as_index=False,
+        dropna=False,
     )["sum_click"].sum()
     activity.to_csv(
         OUTPUT_DIR / "vle_activity_summary.csv.gz", index=False, compression="gzip"
+    )
+
+    cutoff_activity = pd.concat(cutoff_activity_parts, ignore_index=True)
+    cutoff_activity = cutoff_activity.groupby(
+        activity_group_columns,
+        observed=True,
+        as_index=False,
+        dropna=False,
+    )["sum_click"].sum()
+    cutoff_activity.to_csv(
+        OUTPUT_DIR / "vle_activity_summary_day105.csv.gz",
+        index=False,
+        compression="gzip",
     )
 
 

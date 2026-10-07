@@ -129,7 +129,7 @@ Một số interaction theo module giúp Logistic Regression cho phép độ m�
 
 ## 9. Model xuất gì cho dashboard
 
-`model_predictions.csv` cung cấp cho từng lượt học:
+`model_predictions.csv` lưu dự báo ở cấp lượt học để kiểm định kỹ thuật:
 
 - `failure_probability`, `predicted_fail`, `actual_fail`.
 - `risk_band`, `error_type`, threshold, cutoff, version.
@@ -137,13 +137,13 @@ Một số interaction theo module giúp Logistic Regression cho phép độ m�
 
 Dashboard trình bày:
 
-1. Xác suất Fail và nhóm Low/Medium/High.
-2. Accuracy, Recall Fail và khoảng tin cậy trên test.
-3. TP/TN/FP/FN để biết model phát hiện và bỏ sót gì.
+1. Accuracy, Recall Fail, Precision Fail và khoảng tin cậy trên test.
+2. Tỷ lệ `Fail` thật tăng thế nào từ nhóm xác suất dự báo thấp nhất đến cao nhất.
+3. Confusion matrix để biết model phát hiện, bỏ sót và cảnh báo nhầm bao nhiêu.
 4. Hệ số global giải thích tín hiệu tăng/giảm rủi ro.
-5. Danh sách ưu tiên để kiểm tra bài đến hạn, hoạt động VLE và hỗ trợ học tập.
+5. Đặc điểm tổng hợp của nhóm cảnh báo cao so với thấp để xác định yếu tố đáng chú ý.
 
-Không dùng model để tự động xử phạt hoặc quyết định kết quả.
+Dashboard không công bố mã sinh viên, học phần, lớp học hoặc danh sách người được dự báo. Không dùng model để tự động xử phạt hoặc quyết định kết quả.
 
 ## 10. Artifact chuẩn
 

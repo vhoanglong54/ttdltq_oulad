@@ -2,12 +2,12 @@
 
 Dashboard gồm bốn trang theo đúng mạch phân tích:
 
-1. **Bức tranh kết quả học tập:** 4 KPI, Filled Map và 100% stacked bar có drill.
-2. **Các yếu tố học tập:** mức tham gia trực tuyến, hoàn thành bài, thời điểm nộp và tài nguyên được dùng.
+1. **Bức tranh kết quả học tập:** 4 KPI, cơ cấu tổng thể, bản đồ và phân bố điểm theo kết quả.
+2. **Các yếu tố học tập:** mức tham gia trực tuyến, hoàn thành bài, thời điểm nộp và cách sử dụng tài nguyên giữa các nhóm kết quả.
 3. **Kết hợp nhiều yếu tố:** mức tham gia × điểm, học vấn × hoàn cảnh khu vực và lịch sử học lại.
-4. **Dự đoán nguy cơ:** 3 KPI, mức nguy cơ, dự đoán đúng/sai/bỏ sót và danh sách ưu tiên hỗ trợ.
+4. **Mô hình và yếu tố dự báo:** 3 KPI, kiểm tra xác suất dự báo với kết quả thật, ma trận sai số và các tín hiệu liên quan đến `Fail`.
 
-Mỗi trang có khối **Story** riêng, trả lời trực tiếp yếu tố nào liên quan đến kết quả. VLE, IMD, mã AAA–GGG, B/J và các chỉ số mô hình được giải thích bằng tiếng Việt ngay trong giao diện. Mô hình dự đoán khả năng `Fail` ở ngày 105; `Withdrawn` tách riêng và model không dự đoán điểm số.
+Mỗi trang có khối **Story** riêng, trả lời trực tiếp yếu tố nào liên quan đến kết quả. Mọi chart đều nối một yếu tố với điểm, kết quả cuối hoặc chất lượng dự báo; không có chart liệt kê mã ẩn danh hay độ phổ biến đơn thuần. Mô hình dự đoán khả năng `Fail` ở ngày 105; `Withdrawn` tách riêng và model không dự đoán điểm số. Giao diện không công bố danh sách, mã sinh viên hay lớp học.
 
 ## Chạy local
 

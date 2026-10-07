@@ -3,48 +3,48 @@
 ## Trang 1 — Bức tranh kết quả
 
 ```text
-FILTER: module │ presentation │ giới tính
+FILTER: giới tính │ tuổi │ học vấn đầu vào │ IMD
 KPI: sinh viên │ điểm TB │ Pass/Distinction │ Fail
-STORY: Fail và Withdrawn tách riêng; khác biệt module/vùng có N
-1. FILLED MAP — tỷ lệ Fail, click region để cross-filter
-2. 100% STACKED BAR — Distinction/Pass/Fail/Withdrawn, drill module → presentation
-3. HISTOGRAM — phân bố điểm quá trình theo kết quả cuối
+STORY: cơ cấu kết quả tổng thể, chênh lệch theo học vấn và vùng
+1. 100% STACKED BAR — tổng thể; drill có chủ đích xuống học vấn đầu vào
+2. FILLED MAP — vùng cư trú × tỷ lệ Fail, click vùng để cross-filter
+3. VIOLIN + BOX — điểm quá trình × kết quả cuối
 ```
 
 ## Trang 2 — Các yếu tố học tập
 
 ```text
-STORY: completion và VLE là hai tín hiệu rõ nhất
-4. MULTI-LINE — Fail so với Pass/Distinction theo thời gian
-5. BAR — completion đến ngày 105 × Fail
-6. SCATTER + TRENDLINE — submission delay × score, chỉ bài nộp <=105
-7. TREEMAP — activity_type × clicks
+STORY: completion và tính liên tục của VLE là hai tín hiệu rõ nhất
+4. MULTI-LINE — nhịp VLE của Fail so với Pass/Distinction
+5. BAR — completion đến ngày 105 × tỷ lệ Fail
+6. SCATTER + TRENDLINE — submission delay × score
+7. GROUPED BAR — cơ cấu tài nguyên VLE × nhóm kết quả
 ```
 
 ## Trang 3 — Kết hợp nhiều yếu tố
 
 ```text
-STORY: thấp–thấp/cao–cao + lịch sử học lại
-8. HEATMAP — VLE quartile × assessment-score quartile
-9. HEATMAP — education × IMD
-10. BOX PLOT — score ngày 105 × previous attempts
+STORY: VLE thấp + điểm thấp; học vấn + IMD; lịch sử học lại
+8. HEATMAP — VLE quartile × assessment-score quartile → Fail
+9. HEATMAP — education × IMD → Fail
+10. BOX PLOT — previous attempts × điểm ngày 105
 ```
 
-## Trang 4 — Cảnh báo giữa khóa
+## Trang 4 — Mô hình và yếu tố dự báo
 
 ```text
-FILTER: Low/Medium/High │ IMD
-KPI: Accuracy │ Recall Fail │ High count
-11. GAUGE — xác suất Fail, threshold đọc từ artifact
-12. DONUT — TP/TN/FP/FN
-13. BAR — tín hiệu global của Logistic Regression
-ACTION LIST — probability Fail + dự báo + mức cảnh báo
-STORY: dự báo cái gì, đúng/bỏ sót bao nhiêu, nhóm High có gì khác, hỗ trợ ra sao
+FILTER: giới tính │ tuổi │ học vấn đầu vào │ IMD
+KPI: Accuracy │ Recall Fail │ Precision Fail
+11. BAR + LINE — decile xác suất dự báo × tỷ lệ Fail thật
+12. CONFUSION MATRIX — kết quả thật × kết quả dự báo
+13. DIVERGING BAR — tín hiệu global của Logistic Regression
+STORY: model phân tầng được nguy cơ không, sai ở đâu, dựa vào yếu tố gì
 ```
 
 ## Quy tắc UX
 
-- Giải thích VLE, IMD, AAA–GGG, B/J và metric trước khi dùng.
-- Story ngắn, có số liệu và hành động; không lặp mô tả trục.
-- Drill chỉ một cấp; không dùng sunburst dày đặc.
-- Action List để ưu tiên hỗ trợ, không phải quyết định tự động.
+- Mỗi visual phải có cấu trúc `yếu tố → kết quả` hoặc `dự báo → kết quả thật`.
+- Story ngắn, có kết luận định lượng; không lặp mô tả trục.
+- Không dùng mã học phần ẩn danh làm insight chính.
+- Không dùng biểu đồ chỉ liệt kê mức sử dụng hoặc số lượng.
+- Không hiển thị danh sách, mã sinh viên hoặc lớp học.
