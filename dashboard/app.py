@@ -696,7 +696,7 @@ def render_overview_page() -> None:
                 EDUCATION_LABELS,
             ),
             comparison_message(base, "region", "Vùng cư trú")
-            + " <b>Nghịch lý địa lý:</b> Sự chênh lệch này đi cùng với khác biệt về kinh tế-xã hội (IMD) và học vấn đầu vào, không phải do vùng địa lý trực tiếp gây ra. Địa lý chỉ đóng vai trò là bối cảnh.",
+            + " **Yếu tố gây nhiễu:** Sự chênh lệch theo vùng phản ánh sự khác biệt về kinh tế-xã hội (IMD) và nền tảng học vấn, chứ không nhất thiết vùng cư trú là nguyên nhân trực tiếp gây ra trượt. Địa lý đóng vai trò là bối cảnh.",
         ],
     )
 
