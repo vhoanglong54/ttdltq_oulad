@@ -23,7 +23,7 @@ Không trộn hai mẫu số. Dữ liệu toàn khóa mô tả kết quả; snap
 
 ## Phương pháp
 
-- `At_Risk = 1` khi kết quả cuối là `Fail` hoặc `Withdrawn`; ngược lại là 0.
+- `At_Risk` trong các bảng hiện tại là alias của `Academic_Fail`: `Fail=1`, `Pass/Distinction=0`; `Withdrawn` được loại khỏi snapshot model và mô tả riêng ở bảng toàn khóa.
 - Các rate đi kèm `at_risk_count`, `attempts` và khoảng tin cậy Wilson 95%.
 - Quartile dùng `rank(method="first")` rồi `qcut` để tạo bốn nhóm có kích thước gần bằng nhau.
 - Điểm assessment bị thiếu được giữ thành nhóm `No scored assessment by cutoff`, không bị gán vào quartile.

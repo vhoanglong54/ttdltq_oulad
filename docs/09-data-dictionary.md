@@ -66,7 +66,10 @@ Ký hiệu missing trong bảng là `blank / ?`. Vai trò “feature tiềm năn
 | `num_of_prev_attempts` | integer | 0–6; 0/0 | Lần thử học phần trước; không phải điểm trước. |
 | `studied_credits` | integer | 30–655; 0/0 | Tổng tín chỉ đang học; feature tiềm năng. |
 | `disability` | string | `N`, `Y`; 0/0 | Background; kiểm tra fairness nếu làm feature. |
-| `final_result` | string | Distinction/Fail/Pass/Withdrawn; 0/0 | **Nhãn/kết quả**, không feature. `At_Risk=1`: Fail/Withdrawn; `0`: Pass/Distinction. |
+| `final_result` | string | Distinction/Fail/Pass/Withdrawn; 0/0 | **Nhãn/kết quả**, không feature. `Academic_Fail=1` chỉ cho Fail; Withdrawn tách riêng. |
+| `Academic_Fail` | int8 | 0/1 | Target học thuật: Fail=1, Pass/Distinction=0; Withdrawn loại khỏi cohort model. |
+| `Withdrawn_Flag` | int8 | 0/1 | Cờ rút học để mô tả duy trì học tập, không gộp vào Fail. |
+| `At_Risk` | int8 | 0/1 | Alias tương thích của `Academic_Fail`; không được dùng làm feature. |
 
 ### `studentRegistration.csv` — 32.593 dòng, 5 cột
 
@@ -155,7 +158,7 @@ Checklist này thay thế các câu hỏi xác minh cũ: kết quả đã đư�
 
 ## Cập nhật T05–T07 (đã nghiệm thu)
 
-Hiện vật [Data Quality Report](../reports/data-quality-report.md) ghi dữ liệu thực, script và lệnh chạy. T07 aggregate `studentAssessment` thành 25.843 và `studentVle` thành 29.228 attempt có event rồi left join vào 32.593 lượt học của `studentInfo`; output 0 duplicate attempt key, 0 unmatched assessment/VLE dimension/registration/courses. Bước chuẩn hóa hiển thị đổi `imd_band` về định dạng phần trăm tường minh, thêm `imd_band_display`, fill 0 có chọn lọc cho count/tổng event và bỏ `has_registration_record` zero variance. Đây là bảng mô tả sạch tái tạo, không phải snapshot feature dự báo sớm. Model v4 dựng snapshot cutoff ngày 105 riêng; mọi dashboard phải dùng đúng contract trong `docs/04-model.md`.
+Hiện vật [Data Quality Report](../reports/data-quality-report.md) ghi dữ liệu thực, script và lệnh chạy. T07 aggregate `studentAssessment` thành 25.843 và `studentVle` thành 29.228 attempt có event rồi left join vào 32.593 lượt học của `studentInfo`; output 0 duplicate attempt key, 0 unmatched assessment/VLE dimension/registration/courses. Bước chuẩn hóa hiển thị đổi `imd_band` về định dạng phần trăm tường minh, thêm `imd_band_display`, fill 0 có chọn lọc cho count/tổng event và bỏ `has_registration_record` zero variance. Đây là bảng mô tả sạch tái tạo, không phải snapshot feature checkpoint. Model v5 dựng snapshot ngày 105 riêng và dự báo `Academic_Fail`; mọi dashboard phải dùng đúng contract trong `docs/04-model.md`.
 
 ## Data marts cho dashboard bốn trang
 

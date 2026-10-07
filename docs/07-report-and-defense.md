@@ -19,11 +19,11 @@ Báo cáo phải đạt **ít nhất 40 trang** và dùng trích dẫn IEEE. Sơ
 ## Kịch bản Story khi demo
 
 1. Nêu câu hỏi trung tâm, hạt lượt học và giới hạn dữ liệu quan sát.
-2. Trang Bức tranh kết quả nêu tỷ lệ qua môn/trượt/bỏ học; học phần và vùng chỉ là bối cảnh so sánh.
+2. Trang Bức tranh kết quả nêu tỷ lệ Pass/Distinction, Fail và Withdrawn tách riêng; học phần và vùng là bối cảnh so sánh.
 3. Demo map cross-filter và drill từ học phần xuống đợt mở.
 4. Trang Các yếu tố học tập kết luận hoàn thành bài là yếu tố liên quan rõ nhất, sau đó đến mức tham gia học trực tuyến.
 5. Trang Kết hợp nhiều yếu tố so sánh nhóm thấp ở cả mức tham gia và điểm với nhóm cao ở cả hai; nêu thêm lịch sử học lại.
-6. Trang Dự đoán nguy cơ nói rõ mô hình dự đoán trượt/bỏ học chứ không dự đoán điểm; diễn giải số dự đoán đúng, số phát hiện được và số bỏ sót bằng ngôn ngữ “trong 100 lượt học”.
+6. Trang Dự đoán nói rõ mô hình dự báo `Fail` so với `Pass/Distinction`, loại `Withdrawn`, không dự đoán điểm; diễn giải số đúng, số phát hiện và số bỏ sót bằng ngôn ngữ “trong 100 lượt học”.
 7. Kết luận Story, hành động thận trọng và giới hạn.
 
 ## Nội dung phải tự giải thích được

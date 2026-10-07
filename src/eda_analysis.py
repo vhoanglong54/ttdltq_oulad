@@ -3,7 +3,7 @@
 The script deliberately separates descriptive analysis from model evaluation:
 
 * full-course `clean_dataset.csv` is used for outcome and regional summaries;
-* the day-105 feature snapshot is used for early-signal analysis;
+* the day-105 academic-fail snapshot is used for mid-course signal analysis;
 * model metrics are never written as analytical insights.
 
 Run from the repository root:
@@ -25,14 +25,21 @@ import seaborn as sns
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN_PATH = ROOT / "data" / "processed" / "clean_dataset.csv"
-SNAPSHOT_PATH = ROOT / "data" / "processed" / "model" / "feature_snapshot.csv"
+SNAPSHOT_PATH = (
+    ROOT
+    / "data"
+    / "processed"
+    / "model_academic_fail"
+    / "c105_final"
+    / "feature_snapshot.csv"
+)
 VLE_PATH = ROOT / "data" / "interim" / "studentVle.csv"
 TABLE_DIR = ROOT / "reports" / "eda"
 FIGURE_DIR = ROOT / "reports" / "figures" / "eda"
 
 ATTEMPT_KEY = ["code_module", "code_presentation", "id_student"]
 RESULT_ORDER = ["Distinction", "Pass", "Fail", "Withdrawn"]
-RISK_LABELS = {0: "Not-At-Risk", 1: "At-Risk"}
+RISK_LABELS = {0: "Pass/Distinction", 1: "Fail"}
 QUARTILE_ORDER = ["Q1 — Lowest", "Q2", "Q3", "Q4 — Highest"]
 ASSESSMENT_SCORE_ORDER = QUARTILE_ORDER + ["No scored assessment by cutoff"]
 COMPLETION_ORDER = ["0%", "(0%, 50%]", "(50%, 100%)", "100%"]
@@ -106,6 +113,7 @@ def add_analysis_bands(snapshot: pd.DataFrame) -> pd.DataFrame:
     for source, target in (
         ("vle_total_clicks_cutoff", "engagement_quartile"),
         ("vle_active_days_cutoff", "active_days_quartile"),
+        ("vle_active_days_last_28_days", "recent_active_days_quartile"),
     ):
         frame[target] = pd.qcut(
             frame[source].rank(method="first"),
@@ -152,6 +160,15 @@ def add_analysis_bands(snapshot: pd.DataFrame) -> pd.DataFrame:
     frame["previous_attempt_band"] = np.where(
         frame["num_of_prev_attempts"].eq(0), "0 previous attempts", "1+ previous attempts"
     )
+    delay = frame["assessment_late_days_mean_cutoff"]
+    has_delay = delay.notna()
+    delay_band = pd.Series("No submitted assessment", index=frame.index, dtype="object")
+    delay_band.loc[has_delay] = pd.qcut(
+        delay.loc[has_delay].rank(method="first"),
+        q=4,
+        labels=QUARTILE_ORDER,
+    ).astype(str)
+    frame["submission_delay_quartile"] = delay_band
     frame["engagement_assessment_profile"] = (
         frame["engagement_quartile"].astype(str)
         + " | "
@@ -261,7 +278,7 @@ def build_insight_evidence(
         InsightEvidence(
             insight_id="INS-01",
             rq="RQ1",
-            comparison="Module-presentation có At-Risk rate cao nhất so với thấp nhất",
+            comparison="Module-presentation có tỷ lệ Fail cao nhất so với thấp nhất",
             group_a=f"{highest_mp.code_module}-{highest_mp.code_presentation}",
             group_a_n=int(highest_mp.attempts),
             group_a_rate=float(highest_mp.at_risk_rate),
@@ -285,7 +302,7 @@ def build_insight_evidence(
             "Q4 — Highest",
             insight_id="INS-02",
             rq="RQ2",
-            comparison="At-Risk rate giữa quartile VLE clicks thấp nhất và cao nhất",
+            comparison="Tỷ lệ Fail giữa quartile VLE clicks thấp nhất và cao nhất",
             scope=f"Eligible cutoff-day-105 snapshot; N={len(snapshot):,} attempts",
             limitation="Clicks đo tương tác nền tảng, không đo chất lượng học hoặc thời gian học.",
         )
@@ -298,7 +315,7 @@ def build_insight_evidence(
             "100%",
             insight_id="INS-03",
             rq="RQ3",
-            comparison="At-Risk rate giữa 0% và 100% assessment completion trước cutoff",
+            comparison="Tỷ lệ Fail giữa 0% và 100% assessment completion trước cutoff",
             scope=f"Eligible cutoff-day-105 snapshot; N={len(snapshot):,} attempts",
             limitation="Assessment schedule khác theo module; completion phản ánh trạng thái đến cutoff, không phải nguyên nhân duy nhất.",
         )
@@ -366,6 +383,32 @@ def build_insight_evidence(
             limitation="OULAD dùng vùng hành chính lịch sử của Open University; region và IMD không đại diện nguyên nhân cá nhân.",
         )
     )
+    evidence.append(
+        compare_two_groups(
+            snapshot.loc[snapshot["submission_delay_quartile"].ne("No submitted assessment")],
+            "submission_delay_quartile",
+            "Q4 — Highest",
+            "Q1 — Lowest",
+            insight_id="INS-07",
+            rq="RQ2",
+            comparison="Tỷ lệ Fail giữa quartile độ trễ nộp bài cao nhất và thấp nhất",
+            scope=f"Eligible day-105 attempts with submitted assessments; N={snapshot['assessment_late_days_mean_cutoff'].notna().sum():,}",
+            limitation="Độ trễ trung bình chỉ tính bài đã nộp; nhóm không nộp được phản ánh riêng qua completion/missed due count.",
+        )
+    )
+    evidence.append(
+        compare_two_groups(
+            snapshot,
+            "recent_active_days_quartile",
+            "Q1 — Lowest",
+            "Q4 — Highest",
+            insight_id="INS-08",
+            rq="RQ2",
+            comparison="Tỷ lệ Fail giữa quartile số ngày hoạt động VLE 28 ngày thấp nhất và cao nhất",
+            scope=f"Eligible cutoff-day-105 snapshot; N={len(snapshot):,} attempts",
+            limitation="Hoạt động VLE không bao quát việc học offline hoặc chất lượng tương tác.",
+        )
+    )
     return pd.DataFrame([item.__dict__ for item in evidence])
 
 
@@ -419,7 +462,7 @@ def build_hypothesis_results(
             {
                 "hypothesis": "H04",
                 "status": "Ủng hộ ở mức mô tả",
-                "evidence": f"At-Risk mean weekly clicks lower in {weeks_at_risk_lower}/{total_weeks} complete weeks",
+                "evidence": f"Fail-group mean weekly clicks lower in {weeks_at_risk_lower}/{total_weeks} complete weeks",
                 "scope": "Weeks 0–14 among day-105 eligible attempts",
             },
             {
@@ -475,12 +518,14 @@ def save_tables(clean: pd.DataFrame, snapshot: pd.DataFrame) -> dict[str, pd.Dat
     region = summarize_risk(clean, ["region"])
     engagement = summarize_risk(snapshot, ["engagement_quartile"])
     active_days = summarize_risk(snapshot, ["active_days_quartile"])
+    recent_active_days = summarize_risk(snapshot, ["recent_active_days_quartile"])
     completion = summarize_risk(snapshot, ["assessment_completion_band"])
     assessment_score = summarize_risk(snapshot, ["assessment_score_quartile"])
     interaction = summarize_risk(
         snapshot, ["engagement_quartile", "assessment_score_quartile"]
     )
     previous_attempts = summarize_risk(snapshot, ["previous_attempt_band"])
+    submission_delay = summarize_risk(snapshot, ["submission_delay_quartile"])
     education = summarize_risk(snapshot, ["highest_education"])
     weekly = build_weekly_vle_trend(snapshot)
     evidence = build_insight_evidence(clean, snapshot, module_presentation, region)
@@ -492,10 +537,12 @@ def save_tables(clean: pd.DataFrame, snapshot: pd.DataFrame) -> dict[str, pd.Dat
         "region_risk": region,
         "engagement_quartiles": engagement,
         "active_days_quartiles": active_days,
+        "recent_active_days_quartiles": recent_active_days,
         "assessment_completion": completion,
         "assessment_score_quartiles": assessment_score,
         "engagement_assessment_matrix": interaction,
         "previous_attempts": previous_attempts,
+        "submission_delay_quartiles": submission_delay,
         "education_risk": education,
         "vle_weekly_trend": weekly,
         "insight_evidence": evidence,
@@ -567,7 +614,7 @@ def plot_static_evidence(
         y="mean_clicks_per_attempt",
         hue="actual_status",
         marker="o",
-        palette={"Not-At-Risk": "#2563EB", "At-Risk": "#DC2626"},
+        palette={"Pass/Distinction": "#2563EB", "Fail": "#DC2626"},
         ax=ax,
     )
     ax.set_title("Mean weekly VLE clicks per eligible attempt (days 0–104)")
@@ -583,11 +630,11 @@ def plot_static_evidence(
         x="actual_status",
         y="log1p_vle_clicks",
         hue="actual_status",
-        palette={"Not-At-Risk": "#2563EB", "At-Risk": "#DC2626"},
+        palette={"Pass/Distinction": "#2563EB", "Fail": "#DC2626"},
         legend=False,
         ax=ax,
     )
-    ax.set_title("Early VLE engagement by final At-Risk status")
+    ax.set_title("VLE engagement through day 105 by academic result")
     ax.set_xlabel("Actual final status")
     ax.set_ylabel("log(1 + VLE clicks through day 105)")
     save_figure(fig, "03_early_vle_boxplot.png")
@@ -601,9 +648,9 @@ def plot_static_evidence(
         color="#F97316",
         ax=ax,
     )
-    ax.set_title("At-Risk rate by assessment completion through day 105")
+    ax.set_title("Fail rate by assessment completion through day 105")
     ax.set_xlabel("Assessment completion band")
-    ax.set_ylabel("At-Risk rate")
+    ax.set_ylabel("Fail rate")
     ax.yaxis.set_major_formatter(lambda value, _: f"{value:.0%}")
     for index, row in completion.reset_index(drop=True).iterrows():
         ax.text(index, row.at_risk_rate + 0.02, f"N={row.attempts:,}", ha="center", fontsize=9)
@@ -623,7 +670,7 @@ def plot_static_evidence(
         cmap="OrRd",
         vmin=0,
         vmax=1,
-        cbar_kws={"label": "At-Risk rate"},
+        cbar_kws={"label": "Fail rate"},
         ax=ax,
     )
     ax.set_title("Interaction of early VLE engagement and assessment score")
@@ -634,8 +681,8 @@ def plot_static_evidence(
     region = tables["region_risk"].sort_values("at_risk_rate")
     fig, ax = plt.subplots(figsize=(11, 8))
     sns.barplot(data=region, x="at_risk_rate", y="region", color="#DC2626", ax=ax)
-    ax.set_title("At-Risk rate by OULAD region")
-    ax.set_xlabel("At-Risk rate")
+    ax.set_title("Fail rate by OULAD region")
+    ax.set_xlabel("Fail rate")
     ax.set_ylabel("Region")
     ax.xaxis.set_major_formatter(lambda value, _: f"{value:.0%}")
     for index, row in region.reset_index(drop=True).iterrows():
@@ -650,6 +697,9 @@ def main() -> None:
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
 
     clean = pd.read_csv(CLEAN_PATH)
+    clean["Academic_Fail"] = clean["final_result"].eq("Fail").astype("int8")
+    clean["Withdrawn_Flag"] = clean["final_result"].eq("Withdrawn").astype("int8")
+    clean["At_Risk"] = clean["Academic_Fail"]
     snapshot = pd.read_csv(SNAPSHOT_PATH)
     duplicate_clean = int(clean.duplicated(ATTEMPT_KEY).sum())
     duplicate_snapshot = int(snapshot.duplicated(ATTEMPT_KEY).sum())

@@ -1,0 +1,224 @@
+feature,coefficient,odds_ratio,absolute_coefficient,direction,model_version
+vle_days_since_last_activity,0.6975754809815407,2.008876239665983,0.6975754809815407,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_active_days_last_28_days,-0.5773142835057438,0.5614041159464784,0.5773142835057438,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_assessment_weighted_score_cutoff,-0.5254538578146132,0.5912869432590372,0.5254538578146132,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_CCC_2014B,-0.5034448374077558,0.6044448548989984,0.5034448374077558,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+highest_education_Post Graduate Qualification,-0.5007709344185215,0.6060632445475419,0.5007709344185215,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_resource_count_cutoff,-0.4976313109379484,0.607969045123461,0.4976313109379484,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_log1p_vle_total_clicks_cutoff,0.47059426875246707,1.6009453023497462,0.47059426875246707,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+highest_education_A Level or Equivalent,-0.46085552178681394,0.6307437995524502,0.46085552178681394,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+highest_education_HE Qualification,-0.44932496156253143,0.6380587204418318,0.44932496156253143,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_assessment_completion_rate_cutoff,0.4362751992979315,1.5469344514514638,0.4362751992979315,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_GGG_2014J,-0.41425378960762416,0.6608332173793104,0.41425378960762416,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_weighted_points_cutoff,-0.41001836923988466,0.6636380594976419,0.41001836923988466,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_weight_cutoff,0.37833317874800093,1.4598492526035174,0.37833317874800093,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_FFF_2013J,-0.35276439549151073,0.7027427432329433,0.35276439549151073,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_homepage_cutoff,0.3424800845222961,1.4084363037011118,0.3424800845222961,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_weighted_score_cutoff,-0.33733336524224755,0.7136708871741514,0.33733336524224755,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_BBB_2014J,-0.33440170754161536,0.7157661957893734,0.33440170754161536,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_DDD_2013J,0.33416143266556475,1.3967686094550382,0.33416143266556475,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff log1p_vle_clicks_last_28_days,0.3338066831973137,1.3962731944128712,0.3338066831973137,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_assessment_completion_rate_cutoff,-0.3325052048871693,0.7171249362998922,0.3325052048871693,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_assessment_completion_rate_cutoff,-0.29298846452574023,0.7460307464660584,0.29298846452574023,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_clicks_last_28_days vle_days_since_last_activity,0.2843450040457079,1.328891324557668,0.2843450040457079,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_log1p_vle_clicks_last_28_days,-0.25663446446847676,0.7736509590000976,0.25663446446847676,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_missed_due_count,0.2490144240687368,1.2827605355625082,0.2490144240687368,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_BBB_x_assessment_weighted_score_cutoff,0.2483633226397478,1.2819256001880568,0.2483633226397478,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_log1p_vle_clicks_last_28_days,-0.23186560401506603,0.7930526992434537,0.23186560401506603,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_performance_rate_cutoff,-0.22710969330841319,0.7968333702073349,0.22710969330841319,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+highest_education_No Formal quals,0.21956438188623384,1.2455340352049458,0.21956438188623384,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_weighted_points_cutoff,-0.20719514549062606,0.8128610083486892,0.20719514549062606,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_late_count_cutoff,0.20716779906831753,1.230188979027332,0.20716779906831753,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_active_day_rate_cutoff,0.19867991438213287,1.2197914657014899,0.19867991438213287,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_DDD_2014B,-0.19115969046898215,0.8260006731838124,0.19115969046898215,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_page_cutoff,0.1828556124008827,1.2006410378880168,0.1828556124008827,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_score_max_cutoff,-0.18146197693593777,0.8340499578355498,0.18146197693593777,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_last_28_days,-0.17514013392344172,0.8393393926053668,0.17514013392344172,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_submission_count_cutoff,-0.17181933400776275,0.8421313039132756,0.17181933400776275,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_log1p_vle_total_clicks_cutoff,0.17100641634504485,1.1864983619801737,0.17100641634504485,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_presentation_2014B,-0.16766662035900948,0.8456357054249484,0.16766662035900948,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+num_of_prev_attempts,0.16218577660528682,1.1760787089373816,0.16218577660528682,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_length,-0.1618368867591894,0.8505799340752289,0.1618368867591894,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_vle_active_days_last_28_days,-0.1535332273254577,0.8576722655698598,0.1535332273254577,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_active_days_previous_28_days,-0.14318270939121905,0.8665957192536483,0.14318270939121905,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_scored_count_cutoff,-0.13573492822542985,0.8730740291012341,0.13573492822542985,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_banked_count_cutoff,0.12526852023961824,1.1334527672163925,0.12526852023961824,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_failed_score_rate_cutoff,-0.122962162734141,0.8842971213131005,0.122962162734141,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_assessment_days_since_last_submission,0.12125417255393157,1.1289118143035055,0.12125417255393157,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_type_count_cutoff,0.11696875448771872,1.124084306551814,0.11696875448771872,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_previous_28_days,-0.11308326734085863,0.8930762929317834,0.11308326734085863,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff vle_days_since_last_activity,-0.11247842838925073,0.8936166236505664,0.11247842838925073,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_resource_cutoff,0.1123632968230083,1.118919286635977,0.1123632968230083,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_EEE_x_vle_days_since_last_activity,0.11024262117733592,1.1165489360160918,0.11024262117733592,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_clicks_per_active_day,0.10603818171746619,1.111864328585734,0.10603818171746619,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_score_mean_cutoff,-0.10326243250360827,0.9018902571036875,0.10326243250360827,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff assessment_completion_rate_cutoff,-0.10250766607906359,0.9025712305439901,0.10250766607906359,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_vle_active_days_last_28_days,0.1019206477564238,1.1072956018513347,0.1019206477564238,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_DDD_x_assessment_days_since_last_submission,-0.09701911517151204,0.9075386582103634,0.09701911517151204,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__vle_days_since_last_activity num_of_prev_attempts,0.09650945453708476,1.1013199935652933,0.09650945453708476,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_FFF_x_assessment_days_since_last_submission,0.09637946556317922,1.1011768434135603,0.09637946556317922,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_vle_active_days_last_28_days,-0.09020435721847427,0.9137444359187683,0.09020435721847427,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_assessment_completion_rate_cutoff,0.08884581376188191,1.0929121313244234,0.08884581376188191,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_score_min_cutoff,-0.0885754161890879,0.9152340846663999,0.0885754161890879,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_assessment_days_since_last_submission,0.08694109985735972,1.0908324276404833,0.08694109985735972,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_oucontent_cutoff,0.08496885749886911,1.0886831618538615,0.08496885749886911,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_log1p_vle_clicks_last_28_days,0.08037900598885894,1.083697717775769,0.08037900598885894,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_assessment_weighted_score_cutoff,-0.07928904491209071,0.9237728740030023,0.07928904491209071,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_has_activity,-0.0771711601190787,0.9257313917504603,0.0771711601190787,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_oucollaborate_cutoff,-0.07662472543331335,0.9262373817252606,0.07662472543331335,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_late_days_mean_cutoff,0.07281643724853094,1.0755330909799221,0.07281643724853094,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff log1p_vle_total_clicks_cutoff,-0.06925362566305396,0.9330899944961588,0.06925362566305396,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_total_clicks_cutoff log1p_vle_clicks_last_28_days,-0.06832313586602255,0.9339586292809791,0.06832313586602255,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_failed_score_count_cutoff,0.06573241401218892,1.0679409129049873,0.06573241401218892,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_dualpane_cutoff,-0.06548271906968725,0.9366152322023352,0.06548271906968725,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_repeatactivity_cutoff,0.06335882365753408,1.0654090646287868,0.06335882365753408,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_quiz_cutoff,-0.05746355631499758,0.944156298294171,0.05746355631499758,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_vle_days_since_last_activity,0.05731597588684565,1.0589903729581218,0.05731597588684565,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_externalquiz_cutoff,0.053065884448494874,1.0544991179235648,0.053065884448494874,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_DDD_x_assessment_weighted_score_cutoff,-0.052610073626575306,0.9487498829676361,0.052610073626575306,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_BBB_x_assessment_days_since_last_submission,0.051869894122771966,1.0532387010534774,0.051869894122771966,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_vle_days_since_last_activity,-0.05094167481212239,0.9503340973307953,0.05094167481212239,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+code_presentation_2014J,-0.04949776782665199,0.9517072825097224,0.04949776782665199,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__vle_active_days_last_28_days num_of_prev_attempts,0.04929725838670897,1.0505325839518493,0.04929725838670897,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_FFF_x_assessment_weighted_score_cutoff,0.04912798586943839,1.050354772706592,0.04912798586943839,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_submission_count_cutoff,-0.04816847484722813,0.9529732215343464,0.04816847484722813,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_GGG_2013J,0.0480247928792405,1.0491966676082891,0.0480247928792405,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff num_of_prev_attempts,0.04578551663371369,1.046849854995143,0.04578551663371369,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff studied_credits,-0.04380671522690434,0.9571389399781547,0.04380671522690434,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_questionnaire_cutoff,0.04313233761906663,1.0440760562478442,0.04313233761906663,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_clicks_last_28_days vle_active_days_last_28_days,0.04248652343861922,1.0434019948078996,0.04248652343861922,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_CCC_x_vle_days_since_last_activity,-0.04163900104292415,0.9592159940508352,0.04163900104292415,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_CCC_x_assessment_days_since_last_submission,0.04019869002454761,1.0410175934564438,0.04019869002454761,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_sharedsubpage_cutoff,0.03839929654899915,1.0391460774926233,0.03839929654899915,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+studied_credits,-0.03815976935767463,0.9625591411495784,0.03815976935767463,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_assessment_days_since_last_submission,-0.03794321493825538,0.9627676101571745,0.03794321493825538,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_vle_active_days_last_28_days,0.037509514801503455,1.0382218755098913,0.037509514801503455,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_forumng_cutoff,0.03645669836731179,1.0371293936493566,0.03645669836731179,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff vle_active_days_last_28_days,-0.03405761463579219,0.9665158175765102,0.03405761463579219,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_assessment_days_since_last_submission,0.03385266845160833,1.0344321910041645,0.03385266845160833,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+date_registration,0.033672163668091816,1.0342454878963736,0.033672163668091816,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_recent_28_click_share,-0.03327642862997321,0.9672711411933118,0.03327642862997321,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_assessment_weighted_score_cutoff,0.03322118428895131,1.0337791696662197,0.03322118428895131,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_date_registration,-0.03251805351149745,0.9680049737846307,0.03251805351149745,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff num_of_prev_attempts,-0.03239279326497542,0.9681262339206602,0.03239279326497542,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_url_cutoff,0.03169890510693829,1.0322066663556326,0.03169890510693829,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_total_clicks_cutoff vle_days_since_last_activity,-0.03160329731124126,0.9688908674628718,0.03160329731124126,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_clicks_last_28_days num_of_prev_attempts,-0.03008014683609524,0.9703677585261441,0.03008014683609524,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_click_change_28d,0.02904826876623475,1.0294742847294718,0.02904826876623475,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__vle_days_since_last_activity studied_credits,-0.029005123078042382,0.9714114878369936,0.029005123078042382,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_assessment_days_since_last_submission,-0.028565508638124393,0.9718386282358134,0.028565508638124393,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_assessment_days_since_last_submission,-0.02816678412706318,0.9722262013800086,0.02816678412706318,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_ouelluminate_cutoff,0.028149189850329253,1.028549122065048,0.028149189850329253,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+highest_education_Lower Than A Level,0.025559811206472927,1.025889264110077,0.025559811206472927,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_ouwiki_cutoff,-0.025539670681152718,0.9747837078650241,0.025539670681152718,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_AAA_x_assessment_weighted_score_cutoff,-0.025185398195065455,0.9751291080918928,0.025185398195065455,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_vle_active_days_last_28_days,-0.02484084883966111,0.9754651460850344,0.02484084883966111,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff studied_credits,0.021764268017932503,1.0220028373175596,0.021764268017932503,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff log1p_vle_total_clicks_cutoff,-0.02086009209224064,0.9793559746302027,0.02086009209224064,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_clicks_last_28_days studied_credits,-0.020104214448844478,0.9800965277648717,0.020104214448844478,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_score_missing_count_cutoff,0.019774649594746656,1.019971463143738,0.019774649594746656,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_total_clicks_cutoff num_of_prev_attempts,0.017760431688410076,1.0179190860199852,0.017760431688410076,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_event_count_cutoff,0.017632549774429997,1.0177889209020476,0.017632549774429997,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_vle_active_days_last_28_days,-0.0170879271537828,0.9830572434092814,0.0170879271537828,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_CCC_x_assessment_weighted_score_cutoff,0.015801072930505297,1.0159265700082558,0.015801072930505297,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_assessment_completion_rate_cutoff,-0.015020252996092411,0.9850919883368364,0.015020252996092411,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+registration_missing,-0.014283142852873621,0.9858183773148957,0.014283142852873621,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_first_activity_day,0.013557584482677198,1.0136499052750316,0.013557584482677198,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_total_clicks_cutoff studied_credits,0.01314580067143514,1.0132325865822103,0.01314580067143514,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_vle_first_activity_day,0.013050804853465107,1.0131363382955187,0.013050804853465107,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_subpage_cutoff,-0.012839938467329332,0.9872421418648853,0.012839938467329332,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__vle_active_days_last_28_days studied_credits,0.012427731992462521,1.0125052771575815,0.012427731992462521,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_DDD_x_vle_days_since_last_activity,0.01240016209927922,1.0124773628800412,0.01240016209927922,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_AAA_x_assessment_days_since_last_submission,-0.012048718117650889,0.9880235770405287,0.012048718117650889,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff vle_days_since_last_activity,0.011710840411338292,1.011779680766591,0.011710840411338292,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_last_7_days,-0.010865253976773579,0.9891935596940001,0.010865253976773579,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_vle_days_since_last_activity,0.0096155895331001,1.0096619678465524,0.0096155895331001,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+days_observed_at_cutoff,0.00817687013976257,1.0082103920482086,0.00817687013976257,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_click_change_7d,0.007629818059057742,1.0076589992894793,0.007629818059057742,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_completion_rate_cutoff vle_active_days_last_28_days,0.007392125600201428,1.007419514807205,0.007392125600201428,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_htmlactivity_cutoff,0.006559093032193577,1.0065806509906738,0.006559093032193577,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_glossary_cutoff,0.006141644427495341,1.0061605429952505,0.006141644427495341,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__num_of_prev_attempts studied_credits,-0.00571660456625636,0.9942997041260466,0.00571660456625636,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_recent_7_click_share,0.005193787352519573,1.0052072984471745,0.005193787352519573,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_completion_rate_cutoff,-0.003572634011699154,0.9964337402519617,0.003572634011699154,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_EEE_2014J,-0.0034699761888597313,0.996536037221042,0.0034699761888597313,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_vle_days_since_last_activity,0.003364951127655417,1.0033706189312122,0.003364951127655417,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_FFF_x_vle_days_since_last_activity,0.0019170489212920394,1.0019188876343552,0.0019170489212920394,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_vle_days_since_last_activity,0.0018479510535463514,1.001849659567349,0.0018479510535463514,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_vle_days_since_last_activity,0.0013234117260013051,1.0013242878217354,0.0013234117260013051,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_assessment_days_since_last_submission,0.0007887717226007996,1.0007890828848225,0.0007887717226007996,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_assessment_weighted_score_cutoff,-7.425138029601453e-06,0.9999925748895366,7.425138029601453e-06,lower_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_activity_type_count_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_active_days_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_count,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_has_submission,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_days_since_last_submission,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_folder_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_activity_dataplus_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_per_active_day,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+log1p_vle_clicks_previous_7_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_log1p_vle_clicks_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_CCC_x_log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_vle_days_since_last_activity,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_BBB_x_log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_log1p_vle_clicks_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_vle_active_days_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_submitted_weight_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_AAA_x_log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_weight_completion_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_on_time_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+assessment_due_submitted_weight_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+vle_active_day_change_28d,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_due_performance_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_weight_completion_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_on_time_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_days_since_last_submission,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_FFF_x_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_log1p_vle_clicks_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_EEE_x_log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_assessment_completion_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_log1p_vle_clicks_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_DDD_x_vle_days_since_last_activity,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_assessment_completion_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_GGG_x_log1p_vle_total_clicks_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_score_mean_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_score_min_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_score_max_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_late_days_mean_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_failed_score_rate_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_BBB_x_vle_days_since_last_activity,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_BBB,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_AAA,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_GGG_x_vle_days_since_last_activity,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_GGG_x_assessment_days_since_last_submission,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_GGG_x_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_EEE_x_assessment_days_since_last_submission,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_module_EEE_x_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+missingindicator_assessment_weighted_score_cutoff,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_GGG_2014B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_FFF_2013B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_FFF_2014B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_FFF_2014J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_CCC_2014J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_AAA_2014J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_BBB_2014B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_BBB_2013J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_DDD,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_EEE,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_CCC,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_FFF,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_presentation_2013J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_DDD_2014J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_EEE_2013J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_EEE_2014B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_DDD_2013B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_presentation_2013B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+code_module_GGG,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_AAA_2013J,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+module_presentation_BBB_2013B,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__assessment_weighted_score_cutoff log1p_vle_clicks_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__log1p_vle_total_clicks_cutoff vle_active_days_last_28_days,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5
+pairwise_interactions__vle_active_days_last_28_days vle_days_since_last_activity,0.0,1.0,0.0,higher_risk,lr-oulad-academic-fail-c105-s42-v5

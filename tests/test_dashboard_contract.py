@@ -96,10 +96,10 @@ class DashboardMartTests(unittest.TestCase):
 
 
 class EvidenceContractTests(unittest.TestCase):
-    def test_eda_outputs_cover_six_insights_and_ten_hypotheses(self) -> None:
+    def test_eda_outputs_cover_eight_insights_and_ten_hypotheses(self) -> None:
         insights = pd.read_csv(ROOT / "reports" / "eda" / "insight_evidence.csv")
         hypotheses = pd.read_csv(ROOT / "reports" / "eda" / "hypothesis_results.csv")
-        self.assertEqual(set(insights["insight_id"]), {f"INS-{i:02d}" for i in range(1, 7)})
+        self.assertEqual(set(insights["insight_id"]), {f"INS-{i:02d}" for i in range(1, 9)})
         self.assertEqual(set(hypotheses["hypothesis"]), {f"H{i:02d}" for i in range(1, 11)})
         self.assertTrue((insights["group_a_n"] > 0).all())
         self.assertTrue((insights["group_b_n"] > 0).all())

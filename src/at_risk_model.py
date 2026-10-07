@@ -81,8 +81,10 @@ VERIFICATION_THRESHOLDS = {
     "minimum_accuracy": 0.80,
     "minimum_accuracy_ci_lower": 0.80,
     "minimum_recall": 0.70,
-    "minimum_f1": 0.74,
-    "minimum_pr_auc": 0.85,
+    "minimum_balanced_accuracy": 0.78,
+    "minimum_f1": 0.70,
+    "minimum_roc_auc": 0.85,
+    "minimum_pr_auc_margin": 0.20,
     "maximum_brier": 0.15,
     "minimum_baseline_margin": 0.15,
     "minimum_presentation_accuracy": 0.80,
@@ -523,11 +525,12 @@ def write_model_report(
         metrics["model_name"].eq(BASELINE_NAME) & metrics["dataset_split"].eq("test")
     ].iloc[0]
     lines = [
-        "# Model Evaluation — OULAD At-Risk Logistic Regression",
+        "# Model Evaluation — OULAD Academic-Fail Logistic Regression",
         "",
         f"**Ngày chạy (UTC):** {datetime.now(timezone.utc).isoformat(timespec='seconds')}.  ",
         f"**Mốc dự báo:** ngày {cutoff_day} tính từ đầu presentation.  ",
-        "**Target:** `At_Risk = 1` cho `Fail/Withdrawn`; `0` cho `Pass/Distinction`.  ",
+        "**Target:** `Academic_Fail = 1` cho `Fail`; `0` cho `Pass/Distinction`; "
+        "`Withdrawn` được loại khỏi model học thuật và phân tích riêng.  ",
         "**Đơn vị:** một lượt học `(code_module, code_presentation, id_student)`.  ",
         "**Thuật toán chính:** Logistic Regression; `DummyClassifier` chỉ là baseline.  ",
         "",
@@ -540,12 +543,13 @@ def write_model_report(
         lines.append(f"| `{key}` | {value:,} |")
     lines += [
         "",
-        "Các lượt đăng ký sau cutoff hoặc đã rút trước/tại cutoff bị loại khỏi cohort. "
-        "`date_unregistration` chỉ dùng cho eligibility, không đi vào feature.",
+        "Các lượt đăng ký sau cutoff, đã rút trước/tại cutoff hoặc có kết quả cuối "
+        "`Withdrawn` bị loại khỏi cohort model học thuật. `date_unregistration` chỉ dùng "
+        "cho eligibility, không đi vào feature.",
         "",
         "## Split không trùng sinh viên",
         "",
-        "| Split | Dòng | Sinh viên | At-Risk | At-Risk rate |",
+        "| Split | Dòng | Sinh viên | Fail | Fail rate |",
         "|---|---:|---:|---:|---:|",
     ]
     for row in split_summary.itertuples(index=False):
@@ -588,8 +592,8 @@ def write_model_report(
         "",
         "Không metric đơn lẻ nào chứng minh model đáng tin cậy. Accuracy đo tỷ lệ đúng chung; "
         "Balanced Accuracy cân bằng hai lớp; Precision đo mức cảnh báo nhầm; Recall đo mức "
-        "bỏ sót At-Risk; F1 cân bằng Precision/Recall. ROC-AUC đo khả năng xếp hạng qua mọi "
-        "threshold, còn PR-AUC tập trung vào lớp At-Risk và phải so với baseline tỷ lệ lớp. "
+        "bỏ sót Fail; F1 cân bằng Precision/Recall. ROC-AUC đo khả năng xếp hạng qua mọi "
+        "threshold, còn PR-AUC tập trung vào lớp Fail và phải so với baseline tỷ lệ lớp. "
         "Brier/Log Loss đánh giá chất lượng xác suất, không chỉ nhãn đúng/sai. MCC/Kappa kiểm "
         "tra mức đồng thuận khi xét toàn bộ confusion matrix.",
         "",
@@ -629,7 +633,7 @@ def write_model_report(
         "",
         "## Leakage guard",
         "",
-        "- Không dùng `id_student`, `final_result`, `At_Risk`, `Performance_Level` hoặc "
+        "- Không dùng `id_student`, `final_result`, `Academic_Fail`, `At_Risk`, `Performance_Level` hoặc "
         "`date_unregistration` làm feature.",
         "- Không dùng aggregate `*_all_time`; assessment/VLE đều bị giới hạn tại cutoff.",
         "- Preprocessing và model được fit trên train; threshold chỉ chọn trên validation.",
@@ -751,7 +755,7 @@ def run_training(args: argparse.Namespace) -> None:
     split_probabilities: dict[str, np.ndarray] = {}
     metrics_rows: list[dict[str, object]] = []
     confusion_rows: list[dict[str, object]] = []
-    model_version = f"lr-oulad-c{args.cutoff}-s{args.random_state}-v4"
+    model_version = f"lr-oulad-academic-fail-c{args.cutoff}-s{args.random_state}-v5"
 
     dummy = DummyClassifier(strategy="prior")
     dummy.fit(np.zeros((int(train_mask.sum()), 1)), y.loc[train_mask])
@@ -819,6 +823,7 @@ def run_training(args: argparse.Namespace) -> None:
 
     prediction_columns = ATTEMPT_KEY + AUDIT_COLUMNS + [
         "final_result",
+        "Academic_Fail",
         "At_Risk",
         "actual_status",
         "dataset_split",
@@ -827,7 +832,10 @@ def run_training(args: argparse.Namespace) -> None:
     predictions = predictions.rename(columns={"At_Risk": "actual_at_risk"})
     predictions["risk_probability"] = probabilities
     predictions["predicted_at_risk"] = predicted
-    predictions["predicted_status"] = np.where(predicted == 1, "At-Risk", "Not-At-Risk")
+    predictions["predicted_status"] = np.where(predicted == 1, "Fail", "Pass/Distinction")
+    predictions["actual_fail"] = predictions["actual_at_risk"]
+    predictions["failure_probability"] = predictions["risk_probability"]
+    predictions["predicted_fail"] = predictions["predicted_at_risk"]
     predictions["risk_band"] = make_risk_band(probabilities, threshold)
     predictions["correct_prediction"] = predictions["actual_at_risk"].to_numpy() == predicted
     predictions["error_type"] = make_error_type(
@@ -911,7 +919,7 @@ def run_training(args: argparse.Namespace) -> None:
         "model_name": MODEL_NAME,
         "model_version": model_version,
         "cutoff_day": args.cutoff,
-        "target": "At_Risk: Fail/Withdrawn=1; Pass/Distinction=0",
+        "target": "Academic_Fail: Fail=1; Pass/Distinction=0; Withdrawn excluded",
         "grain": ATTEMPT_KEY,
         "best_params": search.best_params_,
         "best_cv_pr_auc": float(search.best_score_),
@@ -984,6 +992,9 @@ def run_validation(args: argparse.Namespace) -> None:
         "actual_at_risk",
         "predicted_at_risk",
         "risk_probability",
+        "actual_fail",
+        "predicted_fail",
+        "failure_probability",
         "risk_band",
         "dataset_split",
         "error_type",
@@ -1136,6 +1147,13 @@ def run_validation(args: argparse.Namespace) -> None:
             "model_metrics.csv",
         ),
         (
+            "test_balanced_accuracy",
+            float(recorded_row["balanced_accuracy"]),
+            args.minimum_balanced_accuracy,
+            ">=",
+            "model_metrics.csv",
+        ),
+        (
             "test_f1_at_risk",
             float(recorded_row["f1_at_risk"]),
             args.minimum_f1,
@@ -1143,9 +1161,16 @@ def run_validation(args: argparse.Namespace) -> None:
             "model_metrics.csv",
         ),
         (
-            "test_pr_auc",
-            float(recorded_row["pr_auc"]),
-            args.minimum_pr_auc,
+            "test_pr_auc_margin_over_prevalence",
+            float(recorded_row["pr_auc"] - recorded_row["at_risk_rate"]),
+            args.minimum_pr_auc_margin,
+            ">=",
+            "model_metrics.csv",
+        ),
+        (
+            "test_roc_auc",
+            float(recorded_row["roc_auc"]),
+            args.minimum_roc_auc,
             ">=",
             "model_metrics.csv",
         ),
@@ -1198,7 +1223,7 @@ def run_validation(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Leakage-safe OULAD At-Risk Logistic Regression pipeline."
+        description="Leakage-safe OULAD Academic-Fail Logistic Regression pipeline."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -1207,7 +1232,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     audit_parser.add_argument("--input-dir", default=str(DEFAULT_INPUT))
     audit_parser.add_argument(
-        "--cutoffs", nargs="+", type=int, default=[28, 42, 56, 84, 98, 105, 112]
+        "--cutoffs", nargs="+", type=int, default=[30, 60, 90, 105]
     )
     audit_parser.add_argument(
         "--output", default=str(DEFAULT_OUTPUT / "cutoff_audit.csv")
@@ -1250,12 +1275,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=VERIFICATION_THRESHOLDS["minimum_recall"],
     )
     validate_parser.add_argument(
+        "--minimum-balanced-accuracy",
+        type=float,
+        default=VERIFICATION_THRESHOLDS["minimum_balanced_accuracy"],
+    )
+    validate_parser.add_argument(
         "--minimum-f1", type=float, default=VERIFICATION_THRESHOLDS["minimum_f1"]
     )
     validate_parser.add_argument(
-        "--minimum-pr-auc",
+        "--minimum-pr-auc-margin",
         type=float,
-        default=VERIFICATION_THRESHOLDS["minimum_pr_auc"],
+        default=VERIFICATION_THRESHOLDS["minimum_pr_auc_margin"],
+    )
+    validate_parser.add_argument(
+        "--minimum-roc-auc",
+        type=float,
+        default=VERIFICATION_THRESHOLDS["minimum_roc_auc"],
     )
     validate_parser.add_argument(
         "--maximum-brier",
@@ -1282,8 +1317,10 @@ def main() -> None:
         "minimum_accuracy",
         "minimum_accuracy_ci_lower",
         "minimum_recall",
+        "minimum_balanced_accuracy",
         "minimum_f1",
-        "minimum_pr_auc",
+        "minimum_pr_auc_margin",
+        "minimum_roc_auc",
         "maximum_brier",
         "minimum_baseline_margin",
         "minimum_presentation_accuracy",

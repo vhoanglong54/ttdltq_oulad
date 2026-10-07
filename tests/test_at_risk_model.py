@@ -169,7 +169,12 @@ class CohortTests(unittest.TestCase):
             self.assertEqual(set(cohort["id_student"]), {1, 4})
             self.assertEqual(counts["excluded_registered_after_cutoff"], 1)
             self.assertEqual(counts["excluded_unregistered_by_cutoff"], 1)
+            self.assertEqual(counts["excluded_withdrawn_outcome"], 1)
             self.assertEqual(dict(zip(cohort["id_student"], cohort["At_Risk"])), {1: 0, 4: 0})
+            self.assertEqual(
+                dict(zip(cohort["id_student"], cohort["Academic_Fail"])),
+                {1: 0, 4: 0},
+            )
 
 
 class SplitAndThresholdTests(unittest.TestCase):
@@ -180,8 +185,10 @@ class SplitAndThresholdTests(unittest.TestCase):
                 "minimum_accuracy",
                 "minimum_accuracy_ci_lower",
                 "minimum_recall",
+                "minimum_balanced_accuracy",
                 "minimum_f1",
-                "minimum_pr_auc",
+                "minimum_roc_auc",
+                "minimum_pr_auc_margin",
                 "maximum_brier",
                 "minimum_baseline_margin",
                 "minimum_presentation_accuracy",
@@ -192,6 +199,10 @@ class SplitAndThresholdTests(unittest.TestCase):
             VERIFICATION_THRESHOLDS["minimum_accuracy_ci_lower"], 0.80
         )
         self.assertGreaterEqual(VERIFICATION_THRESHOLDS["minimum_recall"], 0.70)
+        self.assertGreaterEqual(
+            VERIFICATION_THRESHOLDS["minimum_balanced_accuracy"], 0.78
+        )
+        self.assertGreaterEqual(VERIFICATION_THRESHOLDS["minimum_roc_auc"], 0.85)
         self.assertLessEqual(VERIFICATION_THRESHOLDS["maximum_brier"], 0.15)
 
     def test_student_groups_never_cross_splits(self) -> None:

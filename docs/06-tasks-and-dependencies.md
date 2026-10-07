@@ -1,43 +1,25 @@
 # 06 — Thứ tự thực hiện và quan hệ phụ thuộc
 
-Toàn bộ project do **một người thực hiện chính**. Tài liệu này chỉ quản lý thứ tự kỹ thuật và cổng kiểm tra, không phân công theo thành viên.
+Project do leader thực hiện chính. Tài liệu này quản lý cổng kỹ thuật, không chia việc theo thành viên hoặc tuần.
 
-## Trạng thái
-
-- **Đã có hiện vật:** code/data/tài liệu tồn tại và đã qua kiểm tra cơ bản.
-- **Đang làm local:** có thay đổi chưa được duyệt để commit.
-- **Chờ đầu vào:** không được nghiệm thu trước phần phụ thuộc.
-- **Chưa làm:** chưa có hiện vật đủ dùng.
-
-## Lộ trình
-
-| Bước | Nội dung | Đầu ra | Phụ thuộc | Trạng thái |
-|---:|---|---|---|---|
-| 1 | Nguồn và data contract | Nguồn/checksum, dictionary 7 bảng, khóa và grain | — | Đã có hiện vật |
-| 2 | Audit, cleaning, processed | Pipeline, Data Quality Report, `clean_dataset.csv` tái tạo được | Bước 1 | Đã có hiện vật |
-| 3 | Câu hỏi và giả thuyết | RQ1–RQ6, H01–H10 phù hợp OULAD | Bước 1 | Đã có hiện vật trong repo VER2 |
-| 4 | EDA và interaction analysis | Sáu chart tĩnh, kết quả H01–H10 | Bước 2–3 | Đã có hiện vật trong repo VER2 |
-| 5 | Insight và storytelling | Sáu insight đạt mẫu, mạch chuyện hoàn chỉnh | Bước 4 | Đã có hiện vật trong repo VER2 |
-| 6 | Logistic Regression | Feature cutoff-safe, metric/CI, prediction CSV, verification | Bước 2 | Đã có hiện vật kỹ thuật |
-| 7 | Dashboard Python | App bốn trang, Story rõ, ≥8 loại chart thường, map riêng và action list | Bước 2, 5, 6 | Bản hai trang đã push tại `1499c40`; bản bốn trang đang local chờ duyệt |
-| 8 | Geographic Map | Geometry ONS, mapping 13/13, tooltip/filter/QA | Bước 2, 7 | Đã push; mapping 13/13 và audit tự động PASS |
-| 9 | QA tích hợp | KPI baseline, filter/drill/cross-filter, model/version, map coverage | Bước 5–8 | 17/17 test PASS; đã có ảnh và browser QA; video demo chưa làm |
-| 10 | Báo cáo và demo | Báo cáo ≥40 trang, IEEE, slide, video, kịch bản | Bước 9 | Chưa hoàn tất |
-
-## Thứ tự làm tiếp
-
-1. Chạy lại app trên đúng máy và độ phân giải dùng để trình chiếu.
-2. Quay video backup cho map cross-filter, module drill-down, tooltip và Student Action List; ảnh browser QA đã có trong `dashboard/evidence/`.
-3. Chỉ tinh chỉnh theme/nhãn nếu phát hiện lỗi trên màn hình trình chiếu; bản hiện tại đã được leader duyệt tại mốc `1499c40`.
-4. Đối chiếu lại KPI, model output và map coverage nếu có bất kỳ chỉnh sửa dữ liệu hoặc UI nào.
-5. Viết báo cáo ≥40 trang, slide và kịch bản demo.
-6. Chỉ commit/push thay đổi mới sau khi chủ dự án duyệt danh sách thay đổi local.
+| Bước | Đầu ra | Phụ thuộc | Trạng thái local |
+|---:|---|---|---|
+| 1 | Nguồn, raw checksum, data dictionary | — | Đã có |
+| 2 | Audit/clean/join, `clean_dataset.csv` | 1 | Đã cập nhật target mới; cần chạy lại pipeline cuối |
+| 3 | RQ/Hypothesis/plan | 1 | Đã chốt trong `plan_approved.md` |
+| 4 | EDA, 8 insight, 10 hypothesis | 2–3 | Đã sinh 15 bảng + 6 hình |
+| 5 | Logistic Regression checkpoint-safe | 2 | Day 105 v5, 11/11 verification PASS |
+| 6 | Dashboard bốn trang + map | 4–5 | Đã sửa theo target Fail; AppTest PASS |
+| 7 | QA tích hợp | 4–6 | Unit test cần chạy lại sau thay đổi cuối |
+| 8 | DOCX/báo cáo/slide/demo | 7 | Chưa hoàn tất |
+| 9 | Leader duyệt rồi commit repo mới | 7–8 | Chờ link Git và quyền commit |
 
 ## Điểm chặn bắt buộc
 
-- Không khóa insight/story trước EDA.
-- Không chọn chart chỉ để đủ số lượng.
-- Không nghiệm thu Geographic Map khi chưa có geometry/mapping dẫn nguồn đủ 13 region.
-- Không nghiệm thu Prediction nếu verification chưa PASS hoặc dùng sai split/version/threshold.
-- Không thay đổi nội dung rubric để khớp hiện vật.
-- Không commit/push trước khi chủ dự án duyệt danh sách thay đổi và kết quả kiểm tra.
+- Không sửa rubric.
+- Không gọi day 105 là cảnh báo sớm.
+- Không gộp Fail với Withdrawn.
+- Không nghiệm thu model nếu verification không PASS hoặc dashboard dùng sai artifact/version/threshold.
+- Không nghiệm thu insight nếu thiếu claim, số liệu, `N`, phạm vi và giới hạn.
+- Không nghiệm thu map nếu mapping không đủ 13 region.
+- Không commit/push trước khi leader duyệt và cung cấp repository mới.

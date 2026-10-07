@@ -15,6 +15,12 @@ data/processed/**
 !data/processed/model/
 !data/processed/model/**
 data/processed/model/feature_snapshot_weighted_experiment.csv
+# Artifact chuẩn của model Academic Fail v5 để repo mới chạy được dashboard.
+!data/processed/model_academic_fail/
+!data/processed/model_academic_fail/cutoff_audit.csv
+!data/processed/model_academic_fail/cutoff_screening.csv
+!data/processed/model_academic_fail/c105_final/
+!data/processed/model_academic_fail/c105_final/**
 reports/figures/generated/**
 !reports/figures/generated/.gitkeep
 
@@ -29,6 +35,7 @@ venv/
 
 # Model artifacts sinh tự động
 models/**
+!models/logistic_academic_fail_c105_final.joblib
 
 # Streamlit — secrets chỉ được giữ local
 .streamlit/secrets.toml

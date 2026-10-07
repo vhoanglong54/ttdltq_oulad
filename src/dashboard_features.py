@@ -33,7 +33,10 @@ def _student_lookup() -> pd.DataFrame:
     frame = pd.read_csv(INTERIM_DIR / "studentInfo.csv", usecols=columns)
     if frame.duplicated(ATTEMPT_KEY).any():
         raise ValueError("studentInfo.csv is not unique at learning-attempt grain")
-    frame["At_Risk"] = frame["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
+    frame["Academic_Fail"] = frame["final_result"].eq("Fail").astype(int)
+    frame["Withdrawn_Flag"] = frame["final_result"].eq("Withdrawn").astype(int)
+    # Legacy chart code reads At_Risk; its canonical meaning is now Fail only.
+    frame["At_Risk"] = frame["Academic_Fail"]
     return frame
 
 
@@ -63,7 +66,15 @@ def build_assessment_marts(student: pd.DataFrame) -> None:
     submissions = submissions.merge(
         student[
             ATTEMPT_KEY
-            + ["gender", "region", "num_of_prev_attempts", "final_result", "At_Risk"]
+            + [
+                "gender",
+                "region",
+                "num_of_prev_attempts",
+                "final_result",
+                "Academic_Fail",
+                "Withdrawn_Flag",
+                "At_Risk",
+            ]
         ],
         on=ATTEMPT_KEY,
         how="inner",
@@ -105,7 +116,8 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
         raise ValueError("vle.csv is not unique at resource grain")
 
     student_dimensions = student[
-        ATTEMPT_KEY + ["gender", "region", "At_Risk"]
+        ATTEMPT_KEY
+        + ["gender", "region", "final_result", "Academic_Fail", "Withdrawn_Flag", "At_Risk"]
     ]
     daily_parts: list[pd.DataFrame] = []
     activity_parts: list[pd.DataFrame] = []
@@ -130,18 +142,24 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
 
         daily_parts.append(
             enriched.groupby(
-                FILTER_COLUMNS + ["At_Risk", "date"], observed=True, as_index=False
+                FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "date"],
+                observed=True,
+                as_index=False,
             )["sum_click"].sum()
         )
         activity_parts.append(
             enriched.groupby(
-                FILTER_COLUMNS + ["activity_type"], observed=True, as_index=False
+                FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "activity_type"],
+                observed=True,
+                as_index=False,
             )["sum_click"].sum()
         )
 
     daily = pd.concat(daily_parts, ignore_index=True)
     daily = daily.groupby(
-        FILTER_COLUMNS + ["At_Risk", "date"], observed=True, as_index=False
+        FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "date"],
+        observed=True,
+        as_index=False,
     )["sum_click"].sum()
     daily.to_csv(
         OUTPUT_DIR / "vle_daily_profile.csv.gz", index=False, compression="gzip"
@@ -149,7 +167,9 @@ def build_vle_marts(student: pd.DataFrame, chunksize: int = 500_000) -> None:
 
     activity = pd.concat(activity_parts, ignore_index=True)
     activity = activity.groupby(
-        FILTER_COLUMNS + ["activity_type"], observed=True, as_index=False
+        FILTER_COLUMNS + ["final_result", "Academic_Fail", "At_Risk", "activity_type"],
+        observed=True,
+        as_index=False,
     )["sum_click"].sum()
     activity.to_csv(
         OUTPUT_DIR / "vle_activity_summary.csv.gz", index=False, compression="gzip"

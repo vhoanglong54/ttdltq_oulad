@@ -1,0 +1,137 @@
+# Model Evaluation — OULAD Academic-Fail Logistic Regression
+
+**Ngày chạy (UTC):** 2026-10-07T09:03:08+00:00.  
+**Mốc dự báo:** ngày 105 tính từ đầu presentation.  
+**Target:** `Academic_Fail = 1` cho `Fail`; `0` cho `Pass/Distinction`; `Withdrawn` được loại khỏi model học thuật và phân tích riêng.  
+**Đơn vị:** một lượt học `(code_module, code_presentation, id_student)`.  
+**Thuật toán chính:** Logistic Regression; `DummyClassifier` chỉ là baseline.  
+
+## Cohort tại cutoff
+
+| Chỉ số | Giá trị |
+|---|---:|
+| `all_attempts` | 32,593 |
+| `excluded_registered_after_cutoff` | 3 |
+| `excluded_unregistered_by_cutoff` | 7,458 |
+| `excluded_withdrawn_outcome` | 10,156 |
+| `eligible_attempts` | 22,427 |
+
+Các lượt đăng ký sau cutoff, đã rút trước/tại cutoff hoặc có kết quả cuối `Withdrawn` bị loại khỏi cohort model học thuật. `date_unregistration` chỉ dùng cho eligibility, không đi vào feature.
+
+## Split không trùng sinh viên
+
+| Split | Dòng | Sinh viên | Fail | Fail rate |
+|---|---:|---:|---:|---:|
+| test | 3,205 | 3,017 | 1,006 | 0.3139 |
+| train | 16,018 | 15,077 | 5,030 | 0.3140 |
+| validation | 3,204 | 3,016 | 1,006 | 0.3140 |
+
+## Cấu hình đã chọn
+
+- `C`: `0.3`.
+- `class_weight`: `None`.
+- Regularization: `L1`; solver: liblinear; preprocessing được fit trong pipeline.
+- Threshold `0.335` tối đa hóa Accuracy trên validation, với recall floor `0.75`.
+- Feature, hyperparameter và threshold của mỗi lần chạy được chọn bằng train-CV/validation; lịch sử so sánh cutoff đã xem test và được công bố tại phần giới hạn.
+
+## Kết quả
+
+| Model | Split | Accuracy | Balanced Acc. | Precision | Recall | F1 | ROC-AUC | PR-AUC | Brier | FN |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| logistic_regression | train | 0.8375 | 0.8175 | 0.7309 | 0.7636 | 0.7469 | 0.9018 | 0.8534 | 0.1070 | 1,189 |
+| dummy_prior_baseline | train | 0.6860 | 0.5000 | 0.0000 | 0.0000 | 0.0000 | 0.5000 | 0.3140 | 0.2154 | 5,030 |
+| logistic_regression | validation | 0.8336 | 0.8111 | 0.7281 | 0.7505 | 0.7391 | 0.8957 | 0.8449 | 0.1094 | 251 |
+| dummy_prior_baseline | validation | 0.6860 | 0.5000 | 0.0000 | 0.0000 | 0.0000 | 0.5000 | 0.3140 | 0.2154 | 1,006 |
+| logistic_regression | test | 0.8368 | 0.8148 | 0.7329 | 0.7555 | 0.7440 | 0.9024 | 0.8522 | 0.1075 | 246 |
+| dummy_prior_baseline | test | 0.6861 | 0.5000 | 0.0000 | 0.0000 | 0.0000 | 0.5000 | 0.3139 | 0.2154 | 1,006 |
+
+Trên test, Logistic Regression có F1 `0.7440` so với baseline `0.0000`; PR-AUC tương ứng `0.8522` và `0.3139`.
+
+### Cách đọc bộ metric
+
+Không metric đơn lẻ nào chứng minh model đáng tin cậy. Accuracy đo tỷ lệ đúng chung; Balanced Accuracy cân bằng hai lớp; Precision đo mức cảnh báo nhầm; Recall đo mức bỏ sót Fail; F1 cân bằng Precision/Recall. ROC-AUC đo khả năng xếp hạng qua mọi threshold, còn PR-AUC tập trung vào lớp Fail và phải so với baseline tỷ lệ lớp. Brier/Log Loss đánh giá chất lượng xác suất, không chỉ nhãn đúng/sai. MCC/Kappa kiểm tra mức đồng thuận khi xét toàn bộ confusion matrix.
+
+Độ tin cậy của kết quả còn dựa vào split không trùng sinh viên, preprocessing chỉ fit trên train, threshold chỉ chọn trên validation, leakage guard, baseline, khoảng tin cậy và khả năng tái tạo. Các kiểm tra này cung cấp bằng chứng tổng quát hóa; không tạo ra bảo đảm tuyệt đối cho dữ liệu tương lai.
+
+## Chất lượng xác suất và độ đồng thuận trên test
+
+| Brier | Probability RMSE | Probability MAE | Log Loss | McFadden pseudo-R² | MCC | Cohen Kappa |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0.1075 | 0.3278 | 0.2153 | 0.3439 | 0.4473 | 0.6244 | 0.6243 |
+
+`R²` thông thường và RMSE của biến liên tục không áp dụng cho target nhị phân. Probability RMSE là căn Brier Score; pseudo-R² phải luôn ghi đúng tên McFadden.
+
+## Khoảng tin cậy 95% trên test
+
+Khoảng dưới đây dùng 2.000 lần bootstrap theo `id_student`, nghĩa là mọi lượt học của cùng một sinh viên được lấy mẫu cùng nhau. Khoảng này phản ánh độ dao động do lấy mẫu trong test, không bảo đảm model sẽ giữ nguyên chất lượng khi dữ liệu tương lai thay đổi phân bố.
+
+| Metric | Ước lượng | Cận dưới 95% | Cận trên 95% |
+|---|---:|---:|---:|
+| `accuracy` | 0.8368 | 0.8242 | 0.8504 |
+| `balanced_accuracy` | 0.8148 | 0.7999 | 0.8304 |
+| `precision_at_risk` | 0.7329 | 0.7054 | 0.7597 |
+| `recall_at_risk` | 0.7555 | 0.7290 | 0.7825 |
+| `f1_at_risk` | 0.7440 | 0.7219 | 0.7659 |
+| `roc_auc` | 0.9024 | 0.8906 | 0.9140 |
+| `pr_auc` | 0.8522 | 0.8343 | 0.8693 |
+| `brier_score` | 0.1075 | 0.1002 | 0.1148 |
+
+## Leakage guard
+
+- Không dùng `id_student`, `final_result`, `Academic_Fail`, `At_Risk`, `Performance_Level` hoặc `date_unregistration` làm feature.
+- Không dùng aggregate `*_all_time`; assessment/VLE đều bị giới hạn tại cutoff.
+- Preprocessing và model được fit trên train; threshold chỉ chọn trên validation.
+- `gender`, `region`, `imd_band`, `age_band`, `disability` chỉ giữ để QA theo nhóm, không dùng trong mô hình chính.
+
+## Hệ số có độ lớn cao nhất
+
+Hệ số phản ánh liên hệ trong mô hình sau preprocessing, không chứng minh nhân quả.
+
+| Feature | Coefficient | Odds ratio | Direction |
+|---|---:|---:|---|
+| `vle_days_since_last_activity` | 0.6976 | 2.0089 | higher_risk |
+| `vle_active_days_last_28_days` | -0.5773 | 0.5614 | lower_risk |
+| `module_CCC_x_assessment_weighted_score_cutoff` | -0.5255 | 0.5913 | lower_risk |
+| `module_presentation_CCC_2014B` | -0.5034 | 0.6044 | lower_risk |
+| `highest_education_Post Graduate Qualification` | -0.5008 | 0.6061 | lower_risk |
+| `log1p_vle_resource_count_cutoff` | -0.4976 | 0.6080 | lower_risk |
+| `module_FFF_x_log1p_vle_total_clicks_cutoff` | 0.4706 | 1.6009 | higher_risk |
+| `highest_education_A Level or Equivalent` | -0.4609 | 0.6307 | lower_risk |
+| `highest_education_HE Qualification` | -0.4493 | 0.6381 | lower_risk |
+| `module_CCC_x_assessment_completion_rate_cutoff` | 0.4363 | 1.5469 | higher_risk |
+| `module_presentation_GGG_2014J` | -0.4143 | 0.6608 | lower_risk |
+| `assessment_due_weighted_points_cutoff` | -0.4100 | 0.6636 | lower_risk |
+| `assessment_due_weight_cutoff` | 0.3783 | 1.4598 | higher_risk |
+| `module_presentation_FFF_2013J` | -0.3528 | 0.7027 | lower_risk |
+| `log1p_vle_clicks_activity_homepage_cutoff` | 0.3425 | 1.4084 | higher_risk |
+
+## Output cho dashboard Python
+
+`model_predictions.csv` có một dòng cho mỗi lượt học eligible, gồm actual/predicted, xác suất, risk band, split, error type, cutoff, threshold và model version. Dashboard đánh giá phải mặc định `dataset_split = test`.
+
+Risk band dùng quy tắc minh bạch: `High` nếu xác suất ≥ threshold; `Medium` nếu xác suất từ nửa threshold đến dưới threshold; còn lại là `Low`.
+
+| File | SHA-256 |
+|---|---|
+| `feature_snapshot.csv` | `183acb501e9ea495c7501ae8465a6faff297701ebb5b9369e97f8192313249b0` |
+| `model_predictions.csv` | `35d943d9130428891f8a42e4c485f45792b69d5066f25d5efb41b2207e50d0d2` |
+| `model_metrics.csv` | `7fef6701bd7717d70e5e7950c60cf2c64976d54331bd38f5241ec84a99c79e22` |
+| `model_confusion_matrix.csv` | `02a77916ba85500e576aa1dfaa582046ce0e14349ffff094a111086d22ec57cf` |
+| `model_coefficients.csv` | `6cb4ffa5a27af6a5a5504edd7e33c20a02778a25c82a249c6ad7d382640ead08` |
+| `threshold_selection.csv` | `45a6a1aa3274b7404ad4f1a8ce336431067f7c50911a70de0c4cba7479dc321e` |
+| `cv_results.csv` | `4e67bce7bd46e7e6905e2e79193f6c18b16b35a472bde9fd6f918ea0c097ed0e` |
+| `model_subgroup_metrics.csv` | `3dffa62ac924424809700a3033f573caffa139daad9e528fa20391fed58c5b24` |
+| `model_curve_points.csv` | `071539ac7ab710ba96c60cfd67584efce9b9b1ca085785acbc183ae1a12de152` |
+| `model_calibration.csv` | `99d3d45f98583611e7418eb608df59b7c937b59b409d45d2b1393ad6da699a0c` |
+| `model_confidence_intervals.csv` | `b4a9d1d2b7fd926f14bd0973ecc98eda23b1fc463e1d3b07a06b30e6eede0d6b` |
+| `logistic_academic_fail_c105_final.joblib` | `1c5121e81a0fffec1f282caec959dd34c24393bd66be5bd4164eb1b5352179e7` |
+| `model_metadata.json` | `28b803fcfdc2f1f304e073655c337a2e2a4179e4a1df6855e80ee2f482487263` |
+
+## Giới hạn
+
+- Đây là dự báo trên dữ liệu quan sát lịch sử, không phải quan hệ nhân quả hoặc chẩn đoán cá nhân.
+- Kết quả phụ thuộc cutoff và coverage assessment khác nhau giữa module/presentation.
+- OULAD không có timestamp công bố điểm. Pipeline giả định điểm của bài nộp trước/tại cutoff đã quan sát được tại cutoff; nếu nghiệp vụ công bố điểm trễ thì phải loại các feature điểm hoặc dùng timestamp công bố thật rồi train lại.
+- CSV dự báo hiện là output đánh giá lịch sử nên chứa actual label; khi dự báo lượt học mới, `final_result`/target không được truyền vào model.
+- Model chỉ hỗ trợ ưu tiên hỗ trợ học tập; không dùng để xử phạt hoặc quyết định tự động.
+- Test split đã được xem ở các vòng cải tiến cutoff 98/105; để có đánh giá hoàn toàn nguyên sơ cần thêm holdout theo thời gian/presentation hoặc dữ liệu ngoài OULAD hiện tại.

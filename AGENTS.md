@@ -7,7 +7,7 @@
 - Công nghệ dashboard duy nhất là **Python với Streamlit + Plotly**. Pandas/NumPy xử lý dữ liệu; Matplotlib/Seaborn phục vụ EDA tĩnh; scikit-learn huấn luyện Logistic Regression; Streamlit + Plotly trình bày dashboard tương tác và output model đã kiểm tra.
 - Không commit hoặc push nếu chủ dự án chưa cho phép rõ ràng. Mọi thay đổi phải được báo cáo để duyệt trước.
 - Không commit 7 CSV gốc, dữ liệu trung gian, secrets, thông tin định danh ngoài OULAD hoặc notebook có output nặng. Chỉ `data/processed/clean_dataset.csv` được theo dõi làm nguồn processed chuẩn; phải giữ script tái tạo và checksum.
-- Giữ `At_Risk` là nhãn từ `final_result`: `Fail/Withdrawn = 1`, `Pass/Distinction = 0`. Không dùng nhãn hoặc thông tin xảy ra sau mốc dự báo làm feature.
+- Nhãn học thuật chính là `Academic_Fail`: `Fail = 1`, `Pass/Distinction = 0`; loại `Withdrawn` khỏi cohort model và mô tả riêng. `At_Risk` chỉ là alias tương thích của `Academic_Fail`. Không dùng nhãn hoặc thông tin xảy ra sau mốc dự báo làm feature.
 - Hạt dữ liệu là **một lượt học theo `(code_module, code_presentation, id_student)`**; không đồng nhất số lượt học với số sinh viên duy nhất.
 - Insight là mối liên hệ trong dữ liệu quan sát; không viết quan hệ nhân quả nếu chưa có thiết kế chứng minh. Mỗi insight phải có RQ/H liên quan, số liệu, mẫu số, filter context, cỡ mẫu, giới hạn và đề xuất hành động.
 - Dashboard chỉ đọc bảng đã aggregate/output model đã kiểm tra. KPI phải có công thức và baseline Python để đối chiếu. Map cần geometry/mapping có nguồn, không tự chế tọa độ hoặc polygon.

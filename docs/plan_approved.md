@@ -1,103 +1,223 @@
-# PLAN_APPROVED — Phương án triển khai cuối đã duyệt
+# PLAN_APPROVED — Phương án triển khai OULAD đã chốt
 
 **Tên đề tài:** Nghiên cứu và phân tích các yếu tố ảnh hưởng đến kết quả học tập của sinh viên đại học
 
-**Cập nhật:** 07/10/2026
+**Ngày duyệt:** 07/10/2026
 
-**Người thực hiện chính:** Leader dự án
+**Công nghệ duy nhất:** Python, Pandas, scikit-learn, Streamlit và Plotly
 
-**Công nghệ:** Python, Pandas, scikit-learn, Streamlit và Plotly
+**Quy tắc Git:** chỉ commit/push sau khi leader cung cấp repo mới và duyệt kết quả
+**Rubric:** giữ nguyên nội dung và tiêu chí; không sửa file rubric nguồn
 
-**Nguyên tắc Git:** chỉ commit/push sau khi leader xem và cho phép
-**Nguồn rubric được bảo vệ:** không chỉnh sửa `02-rubric-traceability.md` và `source/TTDLTQ_script.docx`.
+> **Kết quả triển khai:** đã audit 30/60/90/105; chỉ ngày 105 vượt toàn bộ cổng chất lượng nên sản phẩm gọi là **cảnh báo giữa khóa**. Model v5 dự báo Fail đạt Accuracy 83,68%, Recall Fail 75,55%, ROC-AUC 0,902 và 11/11 verification PASS. Dashboard bốn trang và 8 insight đã chuyển sang target Fail, tách Withdrawn.
 
-## 1. Mục tiêu nghiên cứu
+## 1. Phạm vi nghiên cứu
 
-Phân tích những yếu tố học tập liên quan đến khả năng qua môn, trượt hoặc bỏ học. Sau đó dùng Logistic Regression với dữ liệu có đến ngày 105 để cảnh báo sớm một lượt học có khả năng kết thúc bằng trượt hoặc bỏ học. Mô hình không dự đoán điểm số chính xác.
+Dự án dùng 7 bảng của Open University Learning Analytics Dataset (OULAD) để phân tích các yếu tố **liên quan** đến kết quả học tập trong môi trường đại học trực tuyến. Tên đề tài được giữ nguyên; báo cáo phải nói rõ OULAD là dữ liệu quan sát của một trường đại học tại Vương quốc Anh nên không tự động đại diện cho toàn bộ sinh viên đại học.
 
-Đây là dữ liệu quan sát. Kết luận dùng từ **liên hệ**, **khác biệt**, **xu hướng**; không tuyên bố quan hệ nhân quả.
+Kết quả học tập được đo bằng hai tầng:
 
-## 2. Câu hỏi phân tích
+- Điểm assessment từ 0 đến 100, gồm điểm trung bình và điểm có trọng số.
+- Kết quả cuối của một module-presentation: `Distinction`, `Pass`, `Fail`.
 
-1. Tỷ lệ qua môn, trượt và bỏ học khác nhau thế nào giữa các học phần và khu vực?
-2. Mức tham gia học trực tuyến liên quan thế nào đến kết quả cuối cùng?
-3. Mức hoàn thành bài đến hạn và thời điểm nộp bài liên quan thế nào đến kết quả và điểm số?
-4. Khi mức tham gia học trực tuyến và điểm bài tập cùng thấp, nguy cơ không đạt thay đổi ra sao?
-5. Sinh viên từng học lại học phần có nguy cơ khác nhóm học lần đầu ra sao?
-6. Mô hình dự đoán trượt/bỏ học chính xác đến đâu và ai cần được ưu tiên hỗ trợ?
+`Withdrawn` là kết quả về duy trì học tập và được phân tích riêng, không gộp thành `Fail` trong model học thuật chính. OULAD không có GPA toàn khóa hoặc loại tốt nghiệp; giới hạn này phải xuất hiện trong dashboard và báo cáo.
 
-## 3. Quy ước dữ liệu
+Đơn vị phân tích là một lượt học theo khóa:
 
-- Hạt chính: `(code_module, code_presentation, id_student)` — một lượt sinh viên học một học phần trong một đợt mở lớp.
-- `At_Risk = 1`: `Fail` hoặc `Withdrawn`; `At_Risk = 0`: `Pass` hoặc `Distinction`.
-- Pass Rate: `Pass` hoặc `Distinction` chia tổng learning attempts.
-- Điểm trung bình: tổng điểm hợp lệ chia số assessment có điểm, không lấy trung bình chồng trung bình.
-- VLE là hệ thống học trực tuyến; số lượt tương tác chỉ phản ánh mức độ sử dụng hệ thống, không phải giờ học hay điểm danh.
-- Mô hình chỉ dùng thông tin có ngày `<= 105`; dashboard không huấn luyện lại mô hình.
-- Risk Level phục vụ can thiệp: Low `<40%`, Medium `40–<70%`, High `≥70%`.
-- Threshold phân loại chính thức của model vẫn là `0,415`; risk level không viết lại nhãn dự báo.
+```text
+(code_module, code_presentation, id_student)
+```
 
-## 4. Story đã chốt — bốn trang vật lý
+Không đồng nhất số lượt học với số sinh viên duy nhất.
 
-Dashboard bám cấu trúc bốn trang của rubric và tách insight dữ liệu khỏi model:
+## 2. Nhóm yếu tố được phân tích
 
-1. **Bức tranh kết quả học tập:** quy mô trượt/bỏ học, cơ cấu kết quả, học phần và vùng.
-2. **Các yếu tố học tập:** mức tham gia học trực tuyến, hoàn thành bài, thời điểm nộp và tài nguyên được sử dụng.
-3. **Kết hợp nhiều yếu tố:** mức tham gia × điểm bài tập; hoàn cảnh đầu vào; lịch sử học lại.
-4. **Dự đoán nguy cơ:** khả năng trượt/bỏ học, dự đoán đúng/sai, trường hợp bỏ sót và danh sách ưu tiên hỗ trợ.
+1. Cá nhân: giới tính, nhóm tuổi, tình trạng khuyết tật.
+2. Nền tảng học tập: học vấn trước đó, số lần từng học module, số tín chỉ đăng ký.
+3. Kinh tế–xã hội và địa lý: `imd_band`, `region`.
+4. Mức tham gia học trực tuyến: tổng click, ngày/tuần hoạt động, độ gián đoạn, xu hướng hoạt động và loại tài nguyên VLE.
+5. Hành vi làm bài: số bài đến hạn, tỷ lệ hoàn thành, nộp đúng/trễ hạn và điểm đầu khóa.
 
-Mạch Story: **Kết quả hiện tại ra sao → yếu tố học tập nào liên quan rõ → điều gì xảy ra khi nhiều yếu tố bất lợi cùng xuất hiện → mô hình cảnh báo ai để hỗ trợ.**
+VLE click chỉ là dấu vết sử dụng nền tảng, không phải giờ tự học hoặc điểm danh. IMD là chỉ số thiếu thốn của khu vực cư trú, không phải thu nhập cá nhân.
 
-## 5. Kết luận trọng tâm phải thể hiện rõ
+## 3. Câu hỏi nghiên cứu
 
-1. **Hoàn thành bài đến hạn là yếu tố liên quan rõ nhất:** nhóm chưa hoàn thành bài có nguy cơ không đạt 96,6%, trong khi nhóm hoàn thành đủ là 24,8%.
-2. **Mức tham gia học trực tuyến có liên hệ mạnh:** nhóm 25% ít tương tác nhất có nguy cơ không đạt 64,4%, còn nhóm 25% tương tác nhiều nhất là 18,7%.
-3. **Hai yếu tố bất lợi cùng xuất hiện làm nguy cơ nổi bật hơn:** nhóm vừa ít tương tác vừa có điểm bài tập thấp có nguy cơ 73,3%; nhóm cao ở cả hai chỉ 8,3%.
-4. **Lịch sử học lại là bối cảnh cần chú ý:** nhóm từng học học phần trước có nguy cơ 56,1%, nhóm học lần đầu là 36,3%.
-5. Học phần, khu vực, học vấn đầu vào và hoàn cảnh kinh tế–xã hội chỉ là **bối cảnh có chênh lệch**, không được khẳng định là nguyên nhân.
+1. Điểm số và kết quả cuối khác nhau thế nào giữa module, kỳ học và các nhóm sinh viên?
+2. Học vấn trước đó, số lần học lại, tín chỉ và điều kiện kinh tế–xã hội liên quan thế nào đến kết quả?
+3. Nhóm `Pass/Distinction` và `Fail` có nhịp tương tác VLE khác nhau từ thời điểm nào?
+4. Hoàn thành assessment và nộp đúng hạn liên quan thế nào đến điểm và kết quả cuối?
+5. Khi tương tác thấp, điểm sớm thấp và hoàn thành bài thấp cùng xuất hiện, nguy cơ `Fail` thay đổi ra sao?
+6. Logistic Regression có thể cảnh báo sớm nguy cơ `Fail` với accuracy trên 80% hay không?
 
-## 6. Bố cục biểu đồ
+## 4. Insight phải khai thác
 
-| Trang | Biểu đồ và chức năng |
-|---|---|
-| 1 · Bức tranh kết quả học tập | Filled Geographic Map; 100% Stacked Bar có drill học phần ẩn danh → đợt mở lớp; 4 KPI; Story về kết quả chung và bối cảnh |
-| 2 · Các yếu tố học tập | Multi-Line về mức tham gia trực tuyến; Completion Bar; Scatter + Trendline; Treemap; Story nêu hai yếu tố liên quan rõ nhất |
-| 3 · Kết hợp nhiều yếu tố | Heatmap mức tham gia × điểm; Heatmap học vấn × hoàn cảnh khu vực; Box Plot lịch sử học lại; Story nêu kết luận kết hợp |
-| 4 · Dự đoán nguy cơ | 3 KPI; Gauge; Donut đúng/sai/bỏ sót; danh sách ưu tiên hỗ trợ; Story nói rõ mô hình dự đoán trượt/bỏ học |
+| ID | Nội dung phải kết luận | Vai trò |
+|---|---|---|
+| INS-01 | Cơ cấu Distinction/Pass/Fail/Withdrawn và khác biệt theo module/presentation | Bức tranh kết quả |
+| INS-02 | Chênh lệch `Fail` theo mức hoàn thành assessment đến cutoff | Tiến độ học tập |
+| INS-03 | Liên hệ giữa điểm đầu khóa, nộp đúng/trễ và kết quả cuối | Hành vi làm bài |
+| INS-04 | Chênh lệch kết quả theo mức độ, tính liên tục và độ gián đoạn VLE | Mức tham gia học |
+| INS-05 | Rủi ro khi tương tác thấp, điểm sớm thấp và hoàn thành bài thấp cùng xuất hiện | Bất lợi cộng dồn |
+| INS-06 | Chênh lệch theo học vấn trước đó, số lần học lại và tải tín chỉ | Nền tảng học tập |
+| INS-07 | Chênh lệch theo IMD/region sau khi đặt trong cùng module/presentation | Bối cảnh kinh tế–địa lý |
+| INS-08 | Khác biệt cách sử dụng loại tài nguyên VLE giữa các nhóm kết quả | Chiến lược học tập |
 
-Thuật ngữ OULAD, VLE, IMD, mã AAA–GGG và B/J phải được giải thích ngay trên dashboard. Các chỉ số mô hình phải được diễn giải bằng câu “trong 100 lượt học”. Không dùng nhãn “Câu chuyện”; tên khối kết luận thống nhất là **Story**.
+Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử số/mẫu số, `N`, chênh lệch điểm phần trăm hoặc effect size, filter context, đường dẫn bằng chứng, giới hạn và đề xuất hành động. Không hard-code số liệu chưa được sinh từ pipeline.
 
-## 7. Insight đặt ở đâu
+## 5. Story dashboard bốn trang
 
-- Trang 1: tỷ lệ trượt/bỏ học tổng thể; học phần và vùng là bối cảnh so sánh.
-- Trang 2: hoàn thành bài và mức tham gia trực tuyến là hai yếu tố học tập nổi bật.
-- Trang 3: so sánh nhóm thấp ở cả mức tham gia và điểm với nhóm cao ở cả hai; thêm lịch sử học lại.
-- Trang 4: nói rõ mô hình dự đoán trượt/bỏ học, mức đúng, mức phát hiện và số trường hợp bỏ sót.
+### Trang 1 — Kết quả học tập hiện tại
 
-## 8. Đủ yêu cầu trực quan
+- KPI: tổng lượt học, điểm trung bình, tỷ lệ Pass/Distinction và tỷ lệ Fail.
+- Geographic Map theo 13 vùng, có `N`, bộ lọc và cross-filter.
+- 100% stacked bar: `Distinction/Pass/Fail/Withdrawn`, drill module → presentation.
+- Histogram phân phối điểm assessment.
+- Story: kết quả đang ra sao và khác biệt xuất hiện ở đâu; địa lý là bối cảnh, không phải nguyên nhân tự thân.
 
-Có ít nhất **8 loại biểu đồ không phải map**: 100% stacked bar, multi-line, bar, scatter, treemap, heatmap, box plot, gauge và donut. Geographic Map là cổng bắt buộc độc lập.
+### Trang 2 — Hành vi học tập liên quan trực tiếp
 
-Mỗi biểu đồ có tiêu đề, trục/đơn vị, tooltip, phạm vi và `N` khi cần. Màu thống nhất: xanh cho nhóm không nguy cơ; cam cho cảnh báo; đỏ cho nhóm có nguy cơ cao.
+- Multi-line: tương tác VLE theo tuần giữa các nhóm kết quả.
+- Bar: tỷ lệ Fail theo mức hoàn thành assessment.
+- Scatter + trendline: thời điểm nộp bài và điểm.
+- Box plot: điểm theo mức tương tác hoặc lịch sử học lại.
+- Treemap/heatmap: loại tài nguyên VLE theo nhóm kết quả.
+- Story: tiến độ làm bài, điểm đầu khóa và tính liên tục của hoạt động học là các tín hiệu gần kết quả nhất.
 
-## 9. Data mart phục vụ dashboard
+### Trang 3 — Nhiều yếu tố xuất hiện cùng lúc
 
-`src/dashboard_features.py` tạo bốn bảng nhỏ từ dữ liệu interim đã clean:
+- Heatmap: tương tác × điểm đầu khóa.
+- Heatmap: hoàn thành assessment × mức tương tác.
+- Heatmap: học vấn × IMD.
+- Bar/box plot: số lần học lại và tải tín chỉ.
+- Story: xác định nhóm chịu nhiều yếu tố bất lợi đồng thời, không gán định kiến cá nhân.
 
-- `assessment_deadlines.csv`
-- `assessment_submissions.csv.gz`
-- `vle_daily_profile.csv.gz`
-- `vle_activity_summary.csv.gz`
+### Trang 4 — Cảnh báo sớm nguy cơ Fail
 
-App không đọc `studentVle.csv` 8,4 triệu dòng trong request render. Hai bảng VLE phải bảo toàn tổng `39.605.099` clicks.
+- KPI: Accuracy, Recall Fail và số lượt nguy cơ cao.
+- Gauge hoặc histogram xác suất Fail.
+- Confusion matrix/Donut cho đúng, cảnh báo nhầm và bỏ sót.
+- ROC/PR curve trong phần kiểm định.
+- Bảng ưu tiên hỗ trợ và các tín hiệu làm xác suất tăng/giảm.
+- Story: model ước lượng khả năng `Fail`, không dự đoán GPA hoặc điểm chính xác.
 
-## 10. Cổng nghiệm thu
+Mạch Story chung:
 
-- Trang 1 render 2 chart/4 KPI; Trang 2 render 4 chart; Trang 3 render 3 chart; Trang 4 render 2 chart/3 KPI/1 table; tất cả không exception.
-- Map render 13/13 region, click region tạo cross-filter và có reset.
-- Module bar drill xuống presentation; breadcrumb hiển thị đúng cấp.
-- Risk Level/IMD filter cập nhật chart, KPI và action list.
-- Model verification phải PASS; test metric công bố: Accuracy 82,7%, Recall 73,5%.
-- Automated test, visual QA, link check và `git diff --check` phải PASS.
-- Không sửa hai file rubric được bảo vệ.
-- Không commit/push trước khi leader duyệt.
+```text
+Kết quả hiện tại → yếu tố đơn lẻ → bất lợi cộng dồn → cảnh báo sớm → hỗ trợ phù hợp
+```
+
+## 6. Quy định trực quan
+
+- Tối thiểu 8 loại biểu đồ thường và một Geographic Map riêng.
+- Không dùng sunburst/drill-down hình tròn khó đọc.
+- Một biểu đồ chỉ trả lời một câu hỏi chính.
+- Tiêu đề nêu nội dung; trục, đơn vị, legend và tooltip dùng tiếng Việt dễ hiểu.
+- Mọi tỷ lệ có `N` trong chart, caption hoặc tooltip.
+- Màu nhất quán: xanh cho kết quả tốt/an toàn, cam cho cần chú ý, đỏ cho Fail/nguy cơ cao, xám cho thiếu dữ liệu.
+- Không để title, legend, nhãn hoặc biểu đồ chèn lên nhau ở viewport trình chiếu.
+- Mỗi trang có một khối **Story** gồm 2–3 câu: kết luận, bằng chứng chính và hành động.
+- Chi tiết kỹ thuật/giới hạn nằm trong tooltip hoặc expander, không làm rối luồng chính.
+- Filter chung: module, presentation, region, giới tính, học vấn và IMD.
+- Drill-down: module → presentation → assessment.
+- Map click phải cập nhật KPI và các visual liên quan.
+
+Inventory mục tiêu: Geographic Map, 100% stacked bar, histogram, multi-line, bar, scatter, box plot, heatmap, treemap, gauge, donut/confusion matrix và ROC/PR curve.
+
+## 7. Mục đích và target dự báo
+
+Model chính trả lời câu hỏi:
+
+> Tại một checkpoint đầu khóa, xác suất một lượt học sẽ kết thúc bằng `Fail`, thay vì `Pass` hoặc `Distinction`, là bao nhiêu?
+
+Quy ước:
+
+- `Academic_Fail = 1` nếu `final_result == Fail`.
+- `Academic_Fail = 0` nếu `final_result` là `Pass` hoặc `Distinction`.
+- Loại `Withdrawn` khỏi cohort model học thuật chính; phân tích duy trì học tập riêng.
+- Không dự báo GPA, điểm chính xác hoặc loại tốt nghiệp.
+
+Mỗi output dự báo phải có xác suất Fail, mức Low/Medium/High, nhãn dự báo, actual label trên tập kiểm định, loại lỗi, các tín hiệu chính làm xác suất tăng/giảm và đề xuất hỗ trợ phù hợp.
+
+## 8. Feature và chống data leakage
+
+Feature được phép dùng nếu tồn tại tại checkpoint:
+
+- Module/presentation, học vấn trước đó, số lần học module, tín chỉ và thời điểm đăng ký.
+- Click, ngày hoạt động, khoảng gián đoạn, xu hướng gần đây và loại tài nguyên VLE.
+- Assessment đã đến hạn, tỷ lệ hoàn thành, điểm sớm và thời điểm nộp trước cutoff.
+
+Cấm tuyệt đối:
+
+- `final_result`, target và identifier.
+- `date_unregistration` trong model học thuật.
+- Điểm, submission hoặc VLE event sau cutoff.
+- Aggregate `*_all_time`.
+- Preprocessing fit trên validation/test.
+
+Giới tính, tuổi, region, IMD và disability ưu tiên làm cột audit/subgroup; không tự động dùng để quyết định hỗ trợ cá nhân nếu chưa có lý do và kiểm tra chênh lệch nhóm.
+
+## 9. Chọn checkpoint
+
+Không mặc định giữ ngày 105. Phải kiểm tra các checkpoint 30, 60, 90 và 105 ngày bằng cùng protocol. Chọn **mốc sớm nhất** đạt toàn bộ cổng chất lượng. Nếu chỉ ngày 105 đạt, giao diện phải gọi là “cảnh báo giữa khóa”, không gọi là “cảnh báo sớm”.
+
+Lịch sử so sánh cutoff phải được công bố để tránh cherry-pick.
+
+## 10. Cổng độ chính xác model
+
+Model chỉ được nghiệm thu khi đồng thời đạt:
+
+- Test Accuracy ≥ 0,80.
+- Cận dưới bootstrap 95% của Accuracy ≥ 0,80.
+- Recall lớp Fail ≥ 0,70.
+- Balanced Accuracy ≥ 0,78.
+- F1 lớp Fail ≥ 0,70.
+- ROC-AUC ≥ 0,85.
+- PR-AUC cao hơn rõ ràng tỷ lệ Fail nền.
+- Brier Score ≤ 0,15.
+- Accuracy cao hơn Dummy baseline ít nhất 0,15.
+- Không trùng `id_student` giữa train, validation và test.
+- Threshold chỉ chọn trên validation; test chỉ dùng để báo cáo cuối.
+- Có temporal/presentation stress test để đánh giá độ ổn định.
+
+Không được đổi test, chọn cutoff theo test hoặc đưa feature sau cutoff vào chỉ để vượt 80%.
+
+## 11. Nhận xét model phải đưa ra
+
+Dashboard phải trả lời rõ:
+
+1. Nhóm nào có xác suất Fail cao nhất?
+2. Tín hiệu nào liên quan mạnh nhất đến dự báo Fail?
+3. Trong 100 lượt thực sự Fail, model phát hiện và bỏ sót bao nhiêu?
+4. Nhóm được cảnh báo cần hỗ trợ gì?
+
+Ví dụ diễn giải đúng:
+
+> Tại checkpoint, lượt học có mức hoàn thành assessment thấp, điểm sớm thấp và hoạt động gần đây giảm tạo thành nhóm nguy cơ Fail cao. Đây là tín hiệu để ưu tiên kiểm tra và hỗ trợ, không phải bằng chứng các yếu tố đó chắc chắn gây ra Fail.
+
+Đề xuất hành động:
+
+- Chưa hoàn thành bài: nhắc hạn và hỗ trợ hoàn thành assessment.
+- Điểm đầu khóa thấp: bổ sung học thuật.
+- Hoạt động giảm/ngắt quãng: liên hệ để tìm trở ngại.
+- Lịch sử học lại hoặc tải tín chỉ cao: tư vấn kế hoạch học.
+
+## 12. Phần giữ lại và phần phải làm lại
+
+Giữ lại: 7 bảng raw, pipeline audit/clean/join, processed base, dashboard marts, geometry/mapping 13 vùng, hạ tầng bootstrap/leakage guard/tests và kiến trúc bốn trang.
+
+Làm lại: target, cutoff, model artifacts, metric, insight theo outcome tách biệt, Story, action list, tài liệu còn nhắc Tableau, ảnh QA và báo cáo model.
+
+Model cũ và ảnh QA cũ chỉ được archive/xóa sau khi bản mới vượt kiểm định và leader duyệt.
+
+## 13. Trình tự thực hiện
+
+1. Khóa data contract và outcome.
+2. Tính lại EDA/insight với `Fail` và `Withdrawn` tách riêng.
+3. Huấn luyện Logistic Regression theo các checkpoint.
+4. Chọn checkpoint sớm nhất vượt cổng chất lượng.
+5. Cập nhật dashboard bốn trang và Story.
+6. Kiểm tra map, filter, drill-down, cross-filter và bố cục.
+7. Đồng bộ README, model, insight log, dashboard spec và báo cáo.
+8. Chạy automated tests, visual QA, leakage audit và đối chiếu rubric.
+9. Báo thay đổi để leader duyệt.
+10. Chỉ kết nối và commit lên repo Git mới sau khi được cho phép.

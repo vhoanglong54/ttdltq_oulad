@@ -1,0 +1,12 @@
+check,observed,requirement,status,evidence
+artifact_sha256,all_match,mọi artifact phải tồn tại và khớp SHA-256 trong model_metadata.json,PASS,model_metadata.json
+test_accuracy,0.8368174726989079,>= 0.8,PASS,model_metrics.csv
+accuracy_ci_lower_95,0.8242430311216329,>= 0.8,PASS,model_confidence_intervals.csv
+test_recall_at_risk,0.7554671968190855,>= 0.7,PASS,model_metrics.csv
+test_balanced_accuracy,0.8147504242394654,>= 0.78,PASS,model_metrics.csv
+test_f1_at_risk,0.7440039158100832,>= 0.7,PASS,model_metrics.csv
+test_pr_auc_margin_over_prevalence,0.5383014589514439,>= 0.2,PASS,model_metrics.csv
+test_roc_auc,0.9024380321074916,>= 0.85,PASS,model_metrics.csv
+test_brier_score,0.1074686715978594,<= 0.15,PASS,model_metrics.csv
+accuracy_margin_over_dummy,0.1507020280811232,>= 0.15,PASS,model_metrics.csv
+minimum_presentation_accuracy,0.8183856502242153,>= 0.8,PASS,model_subgroup_metrics.csv

@@ -1,47 +1,47 @@
-# Baseline và checklist QA dashboard
+# QA dashboard — target Academic Fail v5
 
-## Baseline dữ liệu
+Ngày kiểm tra: 07/10/2026. Trạng thái local, chưa commit.
 
-| Chỉ số | Giá trị |
+## Baseline
+
+| Kiểm tra | Kết quả |
 |---|---:|
-| Learning attempts | 32.593 |
-| Unique students | 28.785 |
-| At-Risk attempts | 17.208 |
-| At-Risk rate | 52,7966% |
-| Assessment average | 75,8 |
-| VLE clicks | 39.605.099 |
-| Model test rows | 3.590 |
-| Model Accuracy | 82,70% |
-| Recall At-Risk | 73,49% |
-| High Risk theo dải ≥70% | 810 |
+| Lượt học toàn bảng mô tả | 32.593 |
+| Sinh viên duy nhất | 28.785 |
+| Tỷ lệ Pass/Distinction | 47,2% |
+| Tỷ lệ Fail | 21,6% |
+| Tỷ lệ Withdrawn | 31,2% |
+| Cohort model ngày 105 | 22.427 |
+| Test rows | 3.205 |
+| Test Accuracy | 83,68% |
+| Test Recall Fail | 75,55% |
+| Threshold | 0,335 |
+| High trên test | 1.037 |
 
-## Automated QA
+## Kiểm tra tự động
 
-- [x] Compile app, data layer và mart builder.
-- [x] Unit tests: 17/17 PASS.
-- [x] Hai VLE marts đều bảo toàn 39.605.099 clicks.
-- [x] Submission delay bằng `date_submitted - due_date`.
-- [x] Trang 1 AppTest: 2 charts, 4 metrics, 0 exception.
-- [x] Trang 2 AppTest: 4 charts, 0 exception.
-- [x] Trang 3 AppTest: 3 charts, 0 exception.
-- [x] Trang 4 AppTest: 2 charts, 3 metrics, 1 table, 0 exception.
-- [x] Model verification: 9/9 quality gates PASS.
-- [x] GeoJSON: 13/13 region, geometry valid.
-- [x] Markdown links: 0 link tương đối thiếu.
-- [x] `git diff --check`: 0 whitespace error.
+- `python -m unittest discover -s tests -v`: **17/17 PASS**.
+- `at_risk_model.py validate`: **11/11 PASS**.
+- Streamlit AppTest: **4/4 trang, 0 exception**.
+- Số Plotly chart theo trang: **3 / 4 / 3 / 3**.
+- Browser QA Chrome headless: **4/4 trang, 0 exception**, đúng số chart.
 
-## Browser QA
+## Kiểm tra nghiệp vụ
 
-- [x] Chụp lại bốn trang ở viewport 1440×1000.
-- [x] Filled Map render đủ 13 polygon và cross-filter hoạt động.
-- [x] Stacked bar hiển thị đủ 0–100%, giải thích AAA–GGG/B/J và drill hoạt động.
-- [x] VLE/assessment/interaction visual không bị tràn ngang hoặc chồng nhãn nghiêm trọng.
-- [x] Gauge, donut và Action List hiển thị đúng trên Trang 4.
+- Fail và Withdrawn tách riêng: PASS.
+- Day 105 gọi “cảnh báo giữa khóa”: PASS.
+- Trang 4 nói rõ dự báo Fail, không dự báo điểm/GPA: PASS.
+- Threshold và metric đọc từ artifact: PASS.
+- Geographic Map dùng tỷ lệ Fail và cross-filter: PASS.
+- Submission scatter giới hạn `date_submitted <=105`: PASS.
+- 8 insight có evidence sinh tự động: PASS.
+- Rubric không bị chỉnh sửa: PASS.
 
-Chi tiết: [Visual QA bốn trang](evidence/visual-qa-4page-2026-10-07.md). Bản [Visual QA cũ](evidence/visual-qa-2026-10-07.md) chỉ dùng lưu trữ mốc `1499c40`.
+## Ảnh bằng chứng hiện tại
 
-## Điều kiện chưa tự động hoàn thành
+- [Trang 1](evidence/screenshots/overview-page-v5.png)
+- [Trang 2](evidence/screenshots/behavior-page-v5.png)
+- [Trang 3](evidence/screenshots/interaction-page-v5.png)
+- [Trang 4](evidence/screenshots/prediction-page-v5.png)
 
-- Leader vẫn cần chạy lại trên máy demo và duyệt bằng mắt.
-- Báo cáo, slide, video và link demo là hiện vật riêng.
-- Bản hai trang đã push tại `1499c40`. Bản bốn trang đang local, chưa commit/push và phải được leader duyệt sau browser QA.
+Ảnh v2/v3/v4 là mốc lịch sử, không dùng để nghiệm thu target hiện tại.

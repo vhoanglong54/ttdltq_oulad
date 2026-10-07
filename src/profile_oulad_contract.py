@@ -208,7 +208,7 @@ def main() -> int:
     print("\n## T02 target and map fields")
     print("- `final_result`: " + ", ".join(f"`{key}`={value:,}" for key, value in sorted(final_result.items())))
     print(f"- Non-empty `region` values: {len(regions)}")
-    print("- `At_Risk` is not a raw column; the fixed future mapping is Fail/Withdrawn = 1 and Pass/Distinction = 0.")
+    print("- `Academic_Fail` is derived: Fail = 1, Pass/Distinction = 0; Withdrawn is analysed separately and excluded from the academic model.")
     print("- No cleaning, aggregation, calculated field, model feature, or dashboard comparison is performed by T02.")
     return 0
 

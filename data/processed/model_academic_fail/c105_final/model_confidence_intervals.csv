@@ -1,0 +1,9 @@
+metric,point_estimate,lower_95,upper_95,bootstrap_unit,bootstrap_iterations,dataset_split,model_name,model_version
+accuracy,0.8368174726989079,0.8242430311216329,0.8504414681371971,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+balanced_accuracy,0.8147504242394654,0.7998569918683399,0.8303674271714241,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+precision_at_risk,0.7328833172613307,0.7053863609164279,0.7596978459135365,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+recall_at_risk,0.7554671968190855,0.7289561814421609,0.7824785146511014,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+f1_at_risk,0.7440039158100832,0.7219171243135297,0.7659219292237958,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+roc_auc,0.9024380321074915,0.8906009972040599,0.9139928609738313,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+pr_auc,0.852186014333659,0.8343271146510558,0.869331462198984,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5
+brier_score,0.10746867159785949,0.10022097683387984,0.11478170712027957,id_student,2000,test,logistic_regression,lr-oulad-academic-fail-c105-s42-v5

@@ -157,6 +157,7 @@ PROHIBITED_MODEL_FEATURES = {
     "id_student",
     "final_result",
     "At_Risk",
+    "Academic_Fail",
     "Performance_Level",
     "date_unregistration",
 }
@@ -213,24 +214,33 @@ def build_base_cohort(input_dir: Path, cutoff_day: int) -> tuple[pd.DataFrame, d
     unregistered_by_cutoff = base["date_unregistration"].notna() & (
         base["date_unregistration"] <= cutoff_day
     )
-    eligible = ~(registered_after_cutoff | unregistered_by_cutoff)
+    academic_outcome = base["final_result"].isin(["Fail", "Pass", "Distinction"])
+    withdrawn_outcome = base["final_result"].eq("Withdrawn")
+    eligible = ~(registered_after_cutoff | unregistered_by_cutoff) & academic_outcome
 
     counts = {
         "all_attempts": int(len(base)),
         "excluded_registered_after_cutoff": int(registered_after_cutoff.sum()),
         "excluded_unregistered_by_cutoff": int(unregistered_by_cutoff.sum()),
+        "excluded_withdrawn_outcome": int(withdrawn_outcome.sum()),
         "eligible_attempts": int(eligible.sum()),
     }
     cohort = base.loc[eligible].copy()
     cohort["registration_missing"] = cohort["date_registration"].isna().astype("int8")
-    cohort["At_Risk"] = cohort["final_result"].map(
-        {"Fail": 1, "Withdrawn": 1, "Pass": 0, "Distinction": 0}
+    cohort["Academic_Fail"] = cohort["final_result"].map(
+        {"Fail": 1, "Pass": 0, "Distinction": 0}
     )
+    # Keep the legacy internal column while downstream files are migrated. Its
+    # meaning is now strictly academic failure, never withdrawal.
+    cohort["At_Risk"] = cohort["Academic_Fail"]
     if cohort["At_Risk"].isna().any():
         unknown = sorted(cohort.loc[cohort["At_Risk"].isna(), "final_result"].unique())
         raise ValueError(f"Unknown final_result values: {unknown}")
+    cohort["Academic_Fail"] = cohort["Academic_Fail"].astype("int8")
     cohort["At_Risk"] = cohort["At_Risk"].astype("int8")
-    cohort["actual_status"] = np.where(cohort["At_Risk"].eq(1), "At-Risk", "Not-At-Risk")
+    cohort["actual_status"] = np.where(
+        cohort["Academic_Fail"].eq(1), "Fail", "Pass/Distinction"
+    )
     cohort["cutoff_day"] = int(cutoff_day)
     return cohort, counts
 

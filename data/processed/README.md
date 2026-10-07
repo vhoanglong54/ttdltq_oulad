@@ -29,7 +29,7 @@ python src/dashboard_features.py
 ## Handoff guardrails
 
 - Tỷ lệ/KPI dùng mẫu số **lượt học**, không suy ra số sinh viên unique nếu chưa deduplicate theo `id_student` theo định nghĩa riêng.
-- `*_all_time` chỉ là aggregate mô tả cho EDA/dashboard và không dùng làm feature dự báo sớm. Model v4 dùng cutoff ngày 105, threshold 0,415 và dựng snapshot riêng trực tiếp từ các bảng interim; giá trị cuối phải khớp artifact đã duyệt.
+- `*_all_time` chỉ là aggregate mô tả cho EDA/dashboard và không dùng làm feature model. Model v5 dùng cutoff ngày 105, threshold 0,335 và dựng snapshot riêng từ các bảng interim; giá trị cuối phải khớp artifact `model_academic_fail/c105_final`.
 - Với Average Assessment Score theo filter, dùng `SUM(assessment_score_sum_all_time) / SUM(assessment_scored_count)` khi mẫu số lớn hơn 0; không dùng trung bình trực tiếp của `assessment_score_mean_all_time` vì sẽ sai trọng số.
 - Tuyệt đối loại khỏi model feature: `final_result`, `At_Risk`, `date_unregistration` và bất cứ assessment/VLE nào sau cutoff đã chốt.
 - `imd_band` được chuẩn hóa `10-20` → `10-20%`; raw không thay đổi. `imd_band` missing vẫn nullable, còn `imd_band_display` dùng `Unknown` cho dashboard; không tự diễn giải là thu nhập cá nhân.

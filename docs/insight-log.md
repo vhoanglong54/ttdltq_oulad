@@ -1,88 +1,45 @@
-# Insight Log — các yếu tố liên quan đến kết quả học tập
+# Insight log — kết quả học tập OULAD
 
-Đây là nơi nghiệm thu duy nhất cho insight **phân tích dữ liệu**. Sáu insight dưới đây được tạo từ EDA, tách khỏi đánh giá Logistic Regression ở RQ6. Mọi kết luận chỉ mô tả liên hệ/khác biệt trên OULAD, không khẳng định quan hệ nhân quả.
+Đây là nơi nghiệm thu insight phân tích dữ liệu. Model ở `04-model.md` là phần riêng. Tất cả kết luận dưới đây nói **liên quan/đi cùng**, không chứng minh nhân quả.
 
-## Bản ngắn dùng trên dashboard
+## Tóm tắt dễ trình bày
 
-| ID | Phát hiện và bằng chứng | Ý nghĩa |
-|---|---|---|
-| INS-01 | Tỷ lệ nguy cơ không đạt khác nhau giữa các học phần/đợt mở: `CCC-2014B` 65,8%, `AAA-2013J` 27,4%. | Học phần là bối cảnh có chênh lệch, không phải nguyên nhân đã được chứng minh. |
-| INS-02 | Nhóm 25% ít tham gia học trực tuyến nhất có nguy cơ không đạt 64,4%; nhóm tham gia nhiều nhất là 18,7%. | Mức tham gia trực tuyến thấp là yếu tố cảnh báo sớm đáng chú ý. |
-| INS-03 | Nhóm chưa hoàn thành bài đến hạn có nguy cơ không đạt 96,6%; nhóm hoàn thành đủ là 24,8%. | Đây là yếu tố liên quan rõ nhất; cần theo dõi tiến độ làm bài. |
-| INS-04 | Nhóm vừa ít tham gia trực tuyến vừa có điểm bài tập thấp có nguy cơ 73,3%; nhóm cao ở cả hai chỉ 8,3%. | Nên xem hai yếu tố cùng nhau thay vì chỉ nhìn một chỉ số. |
-| INS-05 | Nhóm từng học học phần trước có nguy cơ 56,1%; nhóm học lần đầu là 36,3%. | Lịch sử học lại là bối cảnh để ưu tiên xem xét, không phải nhãn đánh giá cá nhân. |
-| INS-06 | North Western 59,8%, Ireland 45,1%. | Khu vực chỉ cho thấy nơi cần xem thêm, không chứng minh nơi ở gây ra kết quả. |
+1. **Kết quả khác nhau đáng kể giữa các lớp mở:** `GGG-2013J` có tỷ lệ Fail 30,88%, còn `AAA-2013J` là 11,75%.
+2. **Mức tham gia VLE phân biệt kết quả rõ:** 25% ít click nhất có tỷ lệ Fail 58,25%; 25% nhiều click nhất 12,40%.
+3. **Hoàn thành bài đến hạn là tín hiệu mạnh nhất:** nhóm chưa hoàn thành bài nào có tỷ lệ Fail 95,88%; nhóm hoàn thành đủ 18,75%.
+4. **Hai bất lợi cộng dồn làm nhóm rủi ro nổi bật:** VLE thấp + điểm thấp có tỷ lệ Fail 65,56%; cao ở cả hai chỉ 4,58%.
+5. **Lịch sử học lại cần được chú ý:** nhóm từng học học phần có tỷ lệ Fail 48,83%; học lần đầu 29,02%.
+6. **Có chênh lệch vùng nhưng địa lý là bối cảnh:** Wales 29,72%; South Region 17,59%.
+7. **Nộp muộn đi cùng kết quả kém hơn:** quartile độ trễ cao nhất có tỷ lệ Fail 36,91%; thấp nhất 24,52%.
+8. **Hoạt động gần đây đặc biệt hữu ích để can thiệp:** 25% ít ngày hoạt động nhất trong 28 ngày có tỷ lệ Fail 69,02%; 25% nhiều ngày nhất 9,65%.
 
-Dashboard đưa INS-02 đến INS-05 thành kết luận chính vì chúng trả lời trực tiếp yếu tố học tập nào liên quan đến kết quả. INS-01 và INS-06 chỉ làm bối cảnh. Tử số/mẫu số, phạm vi và giới hạn đầy đủ vẫn được lưu bên dưới để kiểm chứng.
+## Bảng bằng chứng
 
-## Bảng nghiệm thu
+| ID | Claim có số liệu | N / phạm vi | Bằng chứng | Ý nghĩa hành động và giới hạn |
+|---|---|---|---|---|
+| INS-01 | `GGG-2013J` Fail **30,88%** (294/952), `AAA-2013J` **11,75%** (45/383), chênh **19,13 điểm %**. | Toàn khóa; chỉ Fail so với tổng outcome mô tả. | `module_presentation_risk.csv` | Cần so sánh trong từng module/presentation trước khi quy kết cá nhân; khác cấu trúc assessment/cohort. |
+| INS-02 | Quartile VLE click thấp nhất Fail **58,25%** (N=5.607), cao nhất **12,40%** (N=5.607), chênh **45,85 điểm %**. | Cohort model ngày 105, N=22.427. | `engagement_quartiles.csv`, VLE line | Ít dùng hệ thống là tín hiệu theo dõi; click không đo thời gian hay chất lượng học. |
+| INS-03 | Completion 0% Fail **95,88%** (N=1.382), completion 100% **18,75%** (N=17.569), chênh **77,12 điểm %**. | Assessment đã đến hạn tại ngày 105. | `assessment_completion.csv` | Ưu tiên nhắc bài đến hạn; lịch assessment khác nhau giữa module. |
+| INS-04 | VLE thấp + điểm thấp Fail **65,56%** (N=1.507), cao + cao **4,58%** (N=2.098), chênh **60,98 điểm %**. | Snapshot ngày 105, nhóm có điểm để xếp quartile. | `engagement_assessment_matrix.csv` | Dùng hai tín hiệu cùng lúc tốt hơn nhìn một chỉ số; không phải công thức nhân quả. |
+| INS-05 | Có ≥1 lần học trước Fail **48,83%** (N=2.697), lần đầu **29,02%** (N=19.730), chênh **19,82 điểm %**. | Cohort model ngày 105. | `previous_attempts.csv` | Cho phép ưu tiên hỗ trợ bổ sung, không gắn nhãn năng lực. |
+| INS-06 | Wales Fail **29,72%** (N=2.086), South Region **17,59%** (N=3.092), chênh **12,13 điểm %**. | Toàn khóa; vùng cư trú OULAD. | `region_risk.csv`, Geographic Map | Xem thêm cơ cấu module/IMD/cohort; bản đồ không chứng minh vùng gây Fail. |
+| INS-07 | Quartile độ trễ nộp bài trung bình cao nhất Fail **36,91%** (N=5.270), thấp nhất **24,52%** (N=5.270), chênh **12,39 điểm %**. | Lượt đủ điều kiện ngày 105 có ít nhất một bài đã nộp. | `submission_delay_quartiles.csv`, scatter | Nhắc nộp đúng hạn; nhóm chưa nộp được phản ánh riêng qua completion. |
+| INS-08 | Quartile ít ngày hoạt động nhất trong 28 ngày Fail **69,02%** (N=5.607), nhiều nhất **9,65%** (N=5.607), chênh **59,37 điểm %**. | Cohort model ngày 105. | `feature_snapshot.csv`, coefficient model | Theo dõi sự gián đoạn gần đây để liên hệ hỗ trợ; VLE không bao quát học offline. |
 
-| ID | RQ/H | Thông điệp một câu | Bằng chứng | N và tử số/mẫu số | Giới hạn | Vị trí story | Đạt |
-|---|---|---|---|---|---|---|:---:|
-| INS-01 | RQ1 / H01 | `CCC-2014B` có At-Risk rate 65,8%, cao hơn `AAA-2013J` 27,4% đúng 38,3 điểm %. | `01_outcome_by_module_presentation.png`; `module_presentation_risk.csv` | 1.273/1.936 so với 105/383; toàn khóa N=32.593 | Khác cấu trúc module, assessment và cohort; không phải tác động của module. | Academic · outcome drill | [x] |
-| INS-02 | RQ2 / H02–H04 | Nhóm 25% VLE clicks thấp nhất đến ngày 105 có At-Risk 64,4%, cao hơn nhóm 25% cao nhất 18,7% đúng 45,7 điểm %. | `02_vle_weekly_trend.png`; `03_early_vle_boxplot.png`; `engagement_quartiles.csv` | 4.047/6.283 so với 1.173/6.283; snapshot N=25.132 | Click là tương tác nền tảng, không đo chất lượng hay thời gian học. | Academic · VLE line | [x] |
-| INS-03 | RQ3 / H05–H06 | Nhóm chưa hoàn thành assessment nào trước cutoff có At-Risk 96,6%, cao hơn nhóm hoàn thành 100% là 24,8% đúng 71,9 điểm %. | `04_assessment_completion_risk.png`; `assessment_completion.csv`; `assessment_score_quartiles.csv` | 1.620/1.677 so với 4.695/18.969; snapshot N=25.132 | Lịch assessment khác theo module; completion tại cutoff không phải nguyên nhân duy nhất. | Academic · submission | [x] |
-| INS-04 | RQ5 / H09 | Hồ sơ đồng thời VLE thấp và điểm assessment thấp có At-Risk 73,3%; hồ sơ cả hai cao là 8,3%, chênh 65,1 điểm %. | `05_engagement_assessment_heatmap.png`; `engagement_assessment_matrix.csv` | 1.232/1.680 so với 197/2.385; snapshot N=25.132 | Chỉ gồm attempt có điểm trước cutoff; quartile là nhóm mô tả, không phải ngưỡng can thiệp. | Risk · context đa biến | [x] |
-| INS-05 | RQ4 / H07 | Attempt có ít nhất một lần học module trước có At-Risk 56,1%, cao hơn nhóm chưa học trước 36,3% đúng 19,7 điểm %. | `previous_attempts.csv`; box plot dashboard | 1.760/3.140 so với 7.987/21.992; snapshot N=25.132 | Không có kết quả chi tiết của lần học trước; còn khác biệt module/cohort chưa kiểm soát. | Trang 3 · previous attempts | [x] |
-| INS-06 | RQ4 / H08 | North Western Region có At-Risk 59,8%, Ireland 45,1%, tạo khoảng chênh mô tả 14,7 điểm %. | `06_region_at_risk_rate.png`; `region_risk.csv`; Geographic Map + mapping audit | 1.738/2.906 so với 534/1.184; toàn khóa N=32.593 | Region lịch sử của OU; map là xấp xỉ công bố từ ONS; không suy ra nguyên nhân cá nhân. | Academic · map | [x] |
+## Story dùng khi thuyết trình
 
-## Chi tiết và “so what?”
+1. Bắt đầu từ cơ cấu kết quả và cho thấy module/presentation/vùng có chênh lệch.
+2. Đi vào yếu tố học tập: hoàn thành bài và tham gia VLE phân biệt nhóm Fail rõ nhất.
+3. Làm rõ rằng nộp muộn, gián đoạn hoạt động và lịch sử học lại là tín hiệu bổ sung.
+4. Kết hợp VLE thấp với điểm thấp để xác định nhóm bất lợi cộng dồn.
+5. Sau insight dữ liệu mới chuyển sang Logistic Regression: dự báo Fail ở ngày 105, kiểm tra sai số và lập danh sách hỗ trợ.
 
-### INS-01 — Chênh lệch giữa module/presentation
+## Cách kiểm tra lại
 
-- **Phạm vi:** toàn bộ 32.593 learning attempts, không filter.
-- **Tái tạo:** `python src/eda_analysis.py`; xem `build_insight_evidence()` và hình 01.
-- **Kết quả giả thuyết:** H01 được ủng hộ ở mức mô tả.
-- **Diễn giải:** outcome mix và At-Risk rate thay đổi đáng kể giữa các module/presentation.
-- **So what:** dashboard phải cho phép drill Module → Presentation; không dùng một baseline chung để diễn giải mọi khóa.
+```powershell
+python src/eda_analysis.py
+python src/dashboard_features.py
+python -m unittest discover -s tests -v
+```
 
-### INS-02 — Tín hiệu tương tác VLE trước cutoff
-
-- **Phạm vi:** 25.132 attempts đủ điều kiện ở ngày 105; quartile tính trên snapshot này.
-- **Tái tạo:** hình 02–03 và `engagement_quartiles.csv`.
-- **Kết quả giả thuyết:** H02, H03, H04 được ủng hộ ở mức mô tả; nhóm At-Risk có mean weekly clicks thấp hơn trong 15/15 tuần trọn vẹn.
-- **Diễn giải:** tương tác VLE thấp đi cùng tỷ lệ kết quả bất lợi cao hơn.
-- **So what:** clicks và active days là tín hiệu cảnh báo sớm hữu ích, nhưng không được gọi là attendance hoặc study hours.
-
-### INS-03 — Tiến độ assessment là tín hiệu phân tách mạnh
-
-- **Phạm vi:** snapshot ngày 105; completion tính theo assessment đã đến hạn tại cutoff.
-- **Tái tạo:** hình 04; bảng completion và score quartile.
-- **Kết quả giả thuyết:** H05 và H06 được ủng hộ ở mức mô tả. Trong nhóm có điểm, Q1 và Q4 chênh 51,8 điểm % At-Risk; 3.783 attempts chưa có scored assessment được giữ riêng, không ép vào quartile.
-- **Diễn giải:** mức hoàn thành và điểm assessment sớm cùng cung cấp tín hiệu rõ, nhưng bị chi phối bởi lịch assessment của từng module.
-- **So what:** mọi visual assessment phải hiển thị module/presentation và nhóm thiếu điểm, tránh coi thiếu là 0 điểm.
-
-### INS-04 — VLE và assessment cần được đọc cùng nhau
-
-- **Phạm vi:** snapshot ngày 105; ma trận chỉ gồm attempts có score để tạo assessment quartile.
-- **Tái tạo:** hình 05 và `engagement_assessment_matrix.csv`.
-- **Kết quả giả thuyết:** H09 được ủng hộ ở mức mô tả; gradient vẫn xuất hiện theo cả hai chiều.
-- **Diễn giải:** tổ hợp hai tín hiệu tạo risk profile rõ hơn so với chỉ nhìn một con số.
-- **So what:** dashboard dùng heatmap/scatter để người xem kiểm tra đồng thời engagement và assessment, không biến quartile thành quy tắc tự động.
-
-### INS-05 — Lịch sử học lại là context quan trọng
-
-- **Phạm vi:** snapshot ngày 105; `num_of_prev_attempts = 0` so với `>= 1`.
-- **Tái tạo:** `previous_attempts.csv` và box plot previous attempts trên Trang 3.
-- **Kết quả giả thuyết:** H07 được ủng hộ ở mức mô tả.
-- **Diễn giải:** nhóm từng học module trước có tỷ lệ At-Risk cao hơn, nhưng dữ liệu không cho biết đầy đủ nguyên nhân hoặc kết quả từng lần trước.
-- **So what:** đây là context để ưu tiên xem xét, không phải nhãn đánh giá cá nhân.
-
-### INS-06 — Khác biệt không gian cần được trình bày thận trọng
-
-- **Phạm vi:** toàn khóa, 13 nhãn region lịch sử của OULAD.
-- **Tái tạo:** hình 06 và `region_risk.csv`.
-- **Kết quả giả thuyết:** H08 được ủng hộ ở mức mô tả, đồng thời có nguy cơ confounding.
-- **Diễn giải:** rate khác nhau theo region, nhưng biến này có thể đồng biến với module mix, cohort, IMD và đặc điểm người học.
-- **So what:** Geographic Map kèm N, bar đối chiếu và lưu ý phạm vi; geometry ONS, giấy phép và mapping 13/13 được audit trong `dashboard/assets/README.md`.
-
-## Mạch Story đã chốt
-
-1. Bắt đầu từ outcome tổng thể, rồi drill xuống module/presentation có chênh lệch lớn.
-2. Nêu yếu tố rõ nhất: chưa hoàn thành bài đến hạn đi cùng nguy cơ không đạt rất cao.
-3. Bổ sung yếu tố thứ hai: mức tham gia học trực tuyến thấp đi cùng nguy cơ cao hơn.
-4. Kết hợp mức tham gia × điểm bài tập để cho thấy hai bất lợi xuất hiện cùng lúc.
-5. Đặt kết quả trong bối cảnh lịch sử học lại và khu vực, luôn công bố N và giới hạn.
-6. Sau phần insight dữ liệu mới chuyển sang mô hình dự đoán trượt/bỏ học.
-
-Model là phần đánh giá riêng trong `docs/04-model.md`; Accuracy, F1, ROC-AUC hoặc PR-AUC không được tính vào sáu insight trên.
+Cả tám insight được sinh tự động trong `reports/eda/insight_evidence.csv`; các bảng thành phần nằm cùng thư mục.

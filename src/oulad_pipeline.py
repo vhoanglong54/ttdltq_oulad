@@ -410,7 +410,10 @@ def build(raw_dir: Path) -> None:
         "vle_activity_type_count_all_time",
     ]
     base[zero_when_no_event] = base[zero_when_no_event].fillna(0)
-    base["At_Risk"] = base["final_result"].map({"Fail": 1, "Withdrawn": 1, "Pass": 0, "Distinction": 0}).astype("int8")
+    base["Academic_Fail"] = base["final_result"].eq("Fail").astype("int8")
+    base["Withdrawn_Flag"] = base["final_result"].eq("Withdrawn").astype("int8")
+    # Compatibility alias: the approved academic target is Fail only.
+    base["At_Risk"] = base["Academic_Fail"]
     base["Performance_Level"] = base["final_result"]
     if base[ATTEMPT_KEY].duplicated().any():
         raise ValueError("T07 failed: joined output is not unique at learner-attempt grain.")
@@ -440,7 +443,7 @@ def build(raw_dir: Path) -> None:
             ],
         },
  
-        "feature_guard": "All *_all_time VLE/assessment aggregates are descriptive EDA/dashboard fields only and must not be used as early-model features. The local model proposal builds a separate day-105 snapshot. final_result, At_Risk and date_unregistration are prohibited model features.",
+        "feature_guard": "All *_all_time VLE/assessment aggregates are descriptive EDA/dashboard fields only. The model builds a separate day-105 snapshot. final_result, Academic_Fail, At_Risk, Withdrawn_Flag and date_unregistration are prohibited model features.",
     }
     JOIN_METRICS.write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"T07 processed dataset written to {output.relative_to(ROOT)}")
@@ -529,7 +532,7 @@ def report() -> None:
         f"và {n(vle_clean['click_total_after'])} sau khi gom event key.",
     ]
     lines += [
-        "", "Quyết định sử dụng: `imd_band` giữ missing nullable (không thay bằng median); bước EDA/dashboard có thể hiển thị/encode category `Unknown` nhưng phải ghi rõ mẫu số. Cleaning không đặt ngưỡng model; model v4 dùng D04 cutoff ngày 105 và D05 threshold 0,415, cần đối chiếu artifact trước khi công bố.",
+        "", "Quyết định sử dụng: `imd_band` giữ missing nullable (không thay bằng median); EDA/dashboard có thể hiển thị category `Unknown` nhưng phải ghi rõ mẫu số. Cleaning không đặt ngưỡng model; model v5 dùng cutoff ngày 105 và threshold 0,335 từ artifact đã kiểm định.",
         "", "## T07 — Join, aggregate và calculated fields", "",
         "Lệnh tái tạo: `python src/oulad_pipeline.py build data/raw`.", "",
         "| Chỉ số | Kết quả |", "|---|---:|",
@@ -550,7 +553,7 @@ def report() -> None:
         f"| duplicate attempt key sau join | {n(join_metrics['joined_output_duplicate_attempt_keys'])} |",
         f"| `final_result` | {', '.join(f'{key}={value:,}' for key, value in join_metrics['final_result'].items())} |",
         f"| `At_Risk` | {', '.join(f'{key}={value:,}' for key, value in join_metrics['at_risk'].items())} |",
-        "", "`At_Risk = 1` cho `Fail`/`Withdrawn`; `0` cho `Pass`/`Distinction`. `Performance_Level` giữ bốn lớp kết quả. Các aggregate `*_all_time` chỉ dành cho mô tả/EDA/dashboard; tuyệt đối không đưa chúng vào mô hình dự báo sớm. Model phải dựng snapshot giới hạn cutoff riêng. Không tạo attendance, study hours, sleep hoặc previous grade giả.",
+        "", "`Academic_Fail = 1` chỉ cho `Fail`; `0` cho `Pass`/`Distinction`. `Withdrawn_Flag` được mô tả riêng và `At_Risk` là alias tương thích của `Academic_Fail`. Các aggregate `*_all_time` chỉ dành cho mô tả; model phải dựng snapshot cutoff riêng. Không tạo attendance, study hours, sleep hoặc previous grade giả.",
         "", "## Đánh giá điều kiện nghiệm thu T05–T07", "",
         "| Điều kiện | Trạng thái | Bằng chứng / giới hạn |", "|---|---|---|",
         "| Pipeline tái tạo từ 7 CSV | Đạt về chạy cục bộ | Script và các lệnh trên; `clean_dataset.csv` được theo dõi và bản hiệu chỉnh chưa commit trong đợt tái cấu trúc. |",
@@ -560,7 +563,7 @@ def report() -> None:
         "| Hiệu chỉnh event VLE | Đã kiểm tra local | Logic bảo toàn click, report và output local đã tái tạo; chưa commit/push. |",
         "", "## Cách sử dụng và giới hạn", "",
         "- EDA dùng `clean_dataset.csv` tái tạo cục bộ cùng Data Quality Report; các tỷ lệ dùng mẫu số là lượt học, không phải sinh viên unique.",
-        "- Model/dashboard dùng schema/hạt, mapping `At_Risk`, aggregate mô tả và guard leakage. Model v4 dùng cutoff ngày 105, threshold 0,415 và split theo `id_student`; cần đối chiếu artifact trước khi công bố.",
+        "- Model/dashboard dùng target `Academic_Fail`, guard leakage và split theo `id_student`. Model v5 dùng cutoff ngày 105, threshold 0,335; phải đối chiếu artifact trước khi công bố.",
         "- Không có thao tác dashboard trong T05–T07. Không có insight hay kết quả model được công bố ở đây.",
     ]
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")

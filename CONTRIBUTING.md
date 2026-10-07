@@ -28,7 +28,7 @@ Project do **một người thực hiện chính** trên toàn bộ chuỗi dữ
 
 ## Quy tắc model và dashboard
 
-- `At_Risk = 1` cho `Fail/Withdrawn`, `0` cho `Pass/Distinction`.
+- `Academic_Fail = 1` cho `Fail`, `0` cho `Pass/Distinction`; `Withdrawn` tách riêng. `At_Risk` chỉ là alias tương thích của `Academic_Fail`.
 - Không dùng target hoặc thông tin sau cutoff làm feature dự báo sớm.
 - App Streamlit chỉ đọc bảng đã aggregate và output model đã kiểm tra; không train model khi render.
 - Inventory sau review là **8 loại biểu đồ không phải map + 1 Geographic Map bắt buộc riêng**, đúng mức tối thiểu rubric. Map không được dùng để bù vào nhóm biểu đồ thường.

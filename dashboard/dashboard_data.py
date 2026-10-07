@@ -15,7 +15,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_PATH = PROJECT_ROOT / "data" / "processed" / "clean_dataset.csv"
-MODEL_DIR = PROJECT_ROOT / "data" / "processed" / "model"
+MODEL_DIR = PROJECT_ROOT / "data" / "processed" / "model_academic_fail" / "c105_final"
 DASHBOARD_DIR = PROJECT_ROOT / "data" / "processed" / "dashboard"
 SNAPSHOT_PATH = MODEL_DIR / "feature_snapshot.csv"
 EDA_DIR = PROJECT_ROOT / "reports" / "eda"
@@ -38,9 +38,12 @@ PREDICTION_REQUIRED_COLUMNS = {
     "region",
     "dataset_split",
     "actual_at_risk",
+    "actual_fail",
     "actual_status",
     "risk_probability",
+    "failure_probability",
     "predicted_at_risk",
+    "predicted_fail",
     "predicted_status",
     "risk_band",
     "error_type",
@@ -108,6 +111,14 @@ def load_analysis_data() -> pd.DataFrame:
     """Load the canonical descriptive table and enforce its attempt grain."""
 
     frame = _read_required_csv(ANALYSIS_PATH, ANALYSIS_REQUIRED_COLUMNS)
+    frame["Academic_Fail"] = frame["final_result"].eq("Fail").astype("int8")
+    frame["Withdrawn_Flag"] = frame["final_result"].eq("Withdrawn").astype("int8")
+    frame["Academic_Success"] = frame["final_result"].isin(
+        ["Pass", "Distinction"]
+    ).astype("int8")
+    # Keep the existing calculation API stable while changing the outcome to
+    # the approved academic target: Fail only, not Fail + Withdrawn.
+    frame["At_Risk"] = frame["Academic_Fail"]
     _assert_attempt_grain(frame, ANALYSIS_PATH.name)
     return frame
 

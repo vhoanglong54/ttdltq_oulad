@@ -7,7 +7,7 @@ Dashboard gồm bốn trang theo đúng mạch phân tích:
 3. **Kết hợp nhiều yếu tố:** mức tham gia × điểm, học vấn × hoàn cảnh khu vực và lịch sử học lại.
 4. **Dự đoán nguy cơ:** 3 KPI, mức nguy cơ, dự đoán đúng/sai/bỏ sót và danh sách ưu tiên hỗ trợ.
 
-Mỗi trang có khối **Story** riêng, trả lời trực tiếp yếu tố nào liên quan đến kết quả. VLE, IMD, mã AAA–GGG, B/J và các chỉ số mô hình được giải thích bằng tiếng Việt ngay trong giao diện. Mô hình dự đoán khả năng trượt/bỏ học, không dự đoán điểm số.
+Mỗi trang có khối **Story** riêng, trả lời trực tiếp yếu tố nào liên quan đến kết quả. VLE, IMD, mã AAA–GGG, B/J và các chỉ số mô hình được giải thích bằng tiếng Việt ngay trong giao diện. Mô hình dự đoán khả năng `Fail` ở ngày 105; `Withdrawn` tách riêng và model không dự đoán điểm số.
 
 ## Chạy local
 

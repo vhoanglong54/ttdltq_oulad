@@ -1,59 +1,46 @@
-# Hướng dẫn phát triển dashboard Python
+# Hướng dẫn dựng và chạy dashboard
 
-## 1. Tạo dữ liệu
+## Nguồn bắt buộc
 
-```powershell
-python src/dashboard_features.py
+```text
+data/processed/clean_dataset.csv
+data/processed/dashboard/*.csv[.gz]
+data/processed/model_academic_fail/c105_final/*
+dashboard/assets/oulad_regions.geojson
 ```
 
-Script tạo:
+Không train model và không đọc hàng triệu event VLE khi render.
 
-- `assessment_deadlines.csv`
-- `assessment_submissions.csv.gz`
-- `vle_daily_profile.csv.gz`
-- `vle_activity_summary.csv.gz`
+## Dựng lại dữ liệu
 
-Không sửa các file này bằng spreadsheet. Muốn thay logic phải sửa script và chạy lại.
+```powershell
+python src/oulad_pipeline.py build data/raw
+python src/oulad_pipeline.py report
+python src/dashboard_features.py
+python src/eda_analysis.py
+python src/at_risk_model.py validate --output-dir data/processed/model_academic_fail/c105_final --model-path models/logistic_academic_fail_c105_final.joblib
+```
 
-## 2. Chạy ứng dụng
+## Chạy app
 
 ```powershell
 streamlit run dashboard/app.py
 ```
 
-## 3. Chạy kiểm thử
+## Contract quan trọng
+
+- Target dashboard/model là Fail; Withdrawn tách riêng.
+- Cutoff = 105; gọi cảnh báo giữa khóa.
+- Threshold = 0,335 từ artifact.
+- Low <0,1675; Medium 0,1675–<0,335; High ≥0,335.
+- Một dòng model = một `module × presentation × student` đủ điều kiện.
+- KPI mô tả và KPI model không được trộn mẫu số.
+
+## QA
 
 ```powershell
-python -m py_compile dashboard/app.py dashboard/dashboard_data.py src/dashboard_features.py
+python -m compileall dashboard src tests
 python -m unittest discover -s tests -v
 ```
 
-Expected AppTest:
-
-- Trang 1: 2 Plotly charts, 4 metrics, 0 exception.
-- Trang 2: 4 Plotly charts, 0 exception.
-- Trang 3: 3 Plotly charts, 0 exception.
-- Trang 4: 2 Plotly charts, 3 metrics, 1 dataframe, 0 exception.
-
-## 4. Quy tắc tính
-
-- Không cộng trùng người học và lượt học; mọi join model dùng đủ ba khóa attempt.
-- Avg Score = tổng score / số score hợp lệ.
-- VLE daily average chia cho toàn bộ attempts của nhóm, kể cả ngày không click.
-- Scatter chỉ sample để render; correlation/trendline phải dùng toàn subset.
-- Chỉ Trang 4 dùng test split. Published metrics toàn test không bị thay bằng subgroup metric.
-- Risk band can thiệp 40%/70% khác với classification threshold 41,5%.
-- App không load joblib và không train model.
-
-## 5. Cổng map
-
-- 13/13 region khớp `properties.region`.
-- Nguồn ONS và OGL v3.0 được giữ trong `assets/README.md`.
-- Click region phải tạo active filter; nút reset phải xóa cả state và Plotly selection.
-
-## 6. Trước khi bàn giao
-
-- Kiểm tra title, axis, unit, tooltip, caption và `N`.
-- Chụp ảnh 1440×1000 cho cả bốn trang và các tương tác map/drill.
-- Chạy link check, `git diff --check` và kiểm tra hai file rubric không đổi.
-- Không commit/push khi chưa có duyệt của leader.
+Sau khi đổi data/model/UI phải chụp lại 4 trang và cập nhật `qa-t09.md`. Không dùng ảnh v2/v3/v4 để nghiệm thu phiên bản v5.

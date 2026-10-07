@@ -1,11 +1,11 @@
 hypothesis,status,evidence,scope
-H01,Ủng hộ ở mức mô tả,Module-presentation range=38.34 pp,Full descriptive table
-H02,Ủng hộ ở mức mô tả,Lowest vs highest clicks quartile difference=45.74 pp,Day-105 snapshot
-H03,Ủng hộ ở mức mô tả,Lowest vs highest active-days quartile difference=50.36 pp,Day-105 snapshot
-H04,Ủng hộ ở mức mô tả,At-Risk mean weekly clicks lower in 15/15 complete weeks,Weeks 0–14 among day-105 eligible attempts
-H05,Ủng hộ ở mức mô tả,0% vs 100% completion difference=71.85 pp,Day-105 snapshot
-H06,Ủng hộ ở mức mô tả,Lowest vs highest assessment-score quartile difference=51.78 pp,Day-105 snapshot
-H07,Ủng hộ ở mức mô tả,1+ vs 0 previous-attempt difference=19.73 pp,Day-105 snapshot
-H08,Ủng hộ ở mức mô tả; cần nêu confounding,Regional range=14.71 pp,Full descriptive table
-H09,Ủng hộ ở mức mô tả,Low-low vs high-high difference=65.07 pp,Day-105 snapshot
-H10,Ủng hộ: độ lớn khác theo module,Within-module low-vs-high engagement difference range=27.68–63.49 pp,"Day-105 snapshot, quartiles calculated within module"
+H01,Ủng hộ ở mức mô tả,Module-presentation range=19.13 pp,Full descriptive table
+H02,Ủng hộ ở mức mô tả,Lowest vs highest clicks quartile difference=45.85 pp,Day-105 snapshot
+H03,Ủng hộ ở mức mô tả,Lowest vs highest active-days quartile difference=50.78 pp,Day-105 snapshot
+H04,Ủng hộ ở mức mô tả,Fail-group mean weekly clicks lower in 15/15 complete weeks,Weeks 0–14 among day-105 eligible attempts
+H05,Ủng hộ ở mức mô tả,0% vs 100% completion difference=77.12 pp,Day-105 snapshot
+H06,Ủng hộ ở mức mô tả,Lowest vs highest assessment-score quartile difference=47.00 pp,Day-105 snapshot
+H07,Ủng hộ ở mức mô tả,1+ vs 0 previous-attempt difference=19.82 pp,Day-105 snapshot
+H08,Ủng hộ ở mức mô tả; cần nêu confounding,Regional range=12.13 pp,Full descriptive table
+H09,Ủng hộ ở mức mô tả,Low-low vs high-high difference=60.98 pp,Day-105 snapshot
+H10,Ủng hộ: độ lớn khác theo module,Within-module low-vs-high engagement difference range=30.13–61.31 pp,"Day-105 snapshot, quartiles calculated within module"

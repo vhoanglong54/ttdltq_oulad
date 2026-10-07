@@ -1,6 +1,6 @@
 # Data Quality Report — OULAD (T05–T07)
 
-**Ngày chạy pipeline:** 06/10/2026.
+**Ngày chạy pipeline:** 07/10/2026.
 **Task:** T05–T07.
 **Hạt đầu ra:** một lượt học `(code_module, code_presentation, id_student)`.  
 **Công nghệ:** Python, pandas 2.3.3, NumPy 2.3.5.  
@@ -107,7 +107,7 @@ Lệnh tái tạo: `python src/oulad_pipeline.py clean data/raw`.
 
 `studentVle.sum_click` được bảo toàn: 39,605,099 trước và 39,605,099 sau khi gom event key.
 
-Quyết định sử dụng: `imd_band` giữ missing nullable (không thay bằng median); bước EDA/dashboard có thể hiển thị/encode category `Unknown` nhưng phải ghi rõ mẫu số. Cleaning không đặt ngưỡng model; model v4 dùng D04 cutoff ngày 105 và D05 threshold 0,415, cần đối chiếu artifact trước khi công bố.
+Quyết định sử dụng: `imd_band` giữ missing nullable (không thay bằng median); EDA/dashboard có thể hiển thị category `Unknown` nhưng phải ghi rõ mẫu số. Cleaning không đặt ngưỡng model; model v5 dùng cutoff ngày 105 và threshold 0,335 từ artifact đã kiểm định.
 
 ## T07 — Join, aggregate và calculated fields
 
@@ -131,22 +131,22 @@ Lệnh tái tạo: `python src/oulad_pipeline.py build data/raw`.
 | excluded zero-variance QA field | `has_registration_record` |
 | duplicate attempt key sau join | 0 |
 | `final_result` | Distinction=3,024, Fail=7,052, Pass=12,361, Withdrawn=10,156 |
-| `At_Risk` | 0=15,385, 1=17,208 |
+| `At_Risk` | 0=25,541, 1=7,052 |
 
-`At_Risk = 1` cho `Fail`/`Withdrawn`; `0` cho `Pass`/`Distinction`. `Performance_Level` giữ bốn lớp kết quả. Các aggregate `*_all_time` chỉ dành cho mô tả/EDA/dashboard; tuyệt đối không đưa chúng vào mô hình dự báo sớm. Model phải dựng snapshot giới hạn cutoff riêng. Không tạo attendance, study hours, sleep hoặc previous grade giả.
+`Academic_Fail = 1` chỉ cho `Fail`; `0` cho `Pass`/`Distinction`. `Withdrawn_Flag` được mô tả riêng và `At_Risk` là alias tương thích của `Academic_Fail`. Các aggregate `*_all_time` chỉ dành cho mô tả; model phải dựng snapshot cutoff riêng. Không tạo attendance, study hours, sleep hoặc previous grade giả.
 
 ## Đánh giá điều kiện nghiệm thu T05–T07
 
 | Điều kiện | Trạng thái | Bằng chứng / giới hạn |
 |---|---|---|
-| Pipeline tái tạo từ 7 CSV | Đạt và đã đưa vào repo VER2 | Script, lệnh tái tạo và `clean_dataset.csv` được theo dõi; bản hiệu chỉnh đã nằm trong mốc triển khai `1499c40`. |
-| Missing/outlier/duplicate có quyết định | Đạt theo pipeline và test | Báo cáo T05/T06; `studentVle` được gom theo learner–resource–day và bảo toàn tổng `sum_click`; bảng khác chỉ loại exact duplicate khi có. |
+| Pipeline tái tạo từ 7 CSV | Đạt về chạy cục bộ | Script và các lệnh trên; `clean_dataset.csv` được theo dõi và bản hiệu chỉnh chưa commit trong đợt tái cấu trúc. |
+| Missing/outlier/duplicate có quyết định | Đạt về pipeline cục bộ | Báo cáo T05/T06; `studentVle` được gom theo learner–resource–day và bảo toàn tổng `sum_click`; bảng khác chỉ loại exact duplicate khi có. |
 | Join không nhân dòng | Đạt theo test T07 | Output cùng số dòng `studentInfo`, duplicate attempt key 0; event được aggregate trước join. |
-| Dùng được cho EDA/dashboard Python và làm nền model | Đạt, có giới hạn đã công bố | Bảng processed dành cho mô tả; model dùng bảng interim và feature theo cutoff, không dùng aggregate `*_all_time`. |
-| Hiệu chỉnh event VLE | Đã kiểm tra và push | Logic bảo toàn click, report và output đã tái tạo; test bảo toàn click PASS và bản triển khai nằm trong `ttdltq_finalVER2/main`. |
+| Dùng được cho EDA/dashboard Python và làm nền model | Đạt local có giới hạn | Bảng processed dành cho mô tả; model dùng bảng interim và feature theo cutoff, không dùng aggregate `*_all_time`. |
+| Hiệu chỉnh event VLE | Đã kiểm tra local | Logic bảo toàn click, report và output local đã tái tạo; chưa commit/push. |
 
 ## Cách sử dụng và giới hạn
 
 - EDA dùng `clean_dataset.csv` tái tạo cục bộ cùng Data Quality Report; các tỷ lệ dùng mẫu số là lượt học, không phải sinh viên unique.
-- Model/dashboard dùng schema/hạt, mapping `At_Risk`, aggregate mô tả và guard leakage. Model v4 dùng cutoff ngày 105, threshold 0,415 và split theo `id_student`; cần đối chiếu artifact trước khi công bố.
+- Model/dashboard dùng target `Academic_Fail`, guard leakage và split theo `id_student`. Model v5 dùng cutoff ngày 105, threshold 0,335; phải đối chiếu artifact trước khi công bố.
 - Không có thao tác dashboard trong T05–T07. Không có insight hay kết quả model được công bố ở đây.

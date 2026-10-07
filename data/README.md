@@ -34,7 +34,7 @@ Tổng số dòng của 7 CSV là **10.900.970**, nên đáp ứng điều kiệ
 ### Bằng chứng phù hợp đề tài và rubric
 
 - `studentInfo.csv` có 32.593 lượt học theo `(code_module, code_presentation, id_student)`, chứa `final_result` và `region`.
-- `final_result` có bốn lớp: `Distinction` 3.024, `Fail` 7.052, `Pass` 12.361, `Withdrawn` 10.156. Mapping đã chốt cho các task sau là `At_Risk = 1` với `Fail/Withdrawn`, `0` với `Pass/Distinction`.
+- `final_result` có bốn lớp: `Distinction` 3.024, `Fail` 7.052, `Pass` 12.361, `Withdrawn` 10.156. Target học thuật đã chốt là `Academic_Fail=1` chỉ cho `Fail`, `0` cho `Pass/Distinction`; `Withdrawn` tách riêng và loại khỏi model.
 - `region` có 13 giá trị khác null, tạo đầu vào cho Geographic Map. Riêng dữ liệu raw không chứng minh geometry/map hoạt động; bằng chứng cuối nằm tại [map asset và audit](../dashboard/assets/README.md).
 - Các bảng assessment, registration và VLE cho phép phân tích kết quả, hành vi học trực tuyến, bối cảnh và liên kết nhiều bảng. Không có biến đo trực tiếp sleep, study hours, attendance hoặc previous grade.
 
