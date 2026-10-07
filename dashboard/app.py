@@ -1437,6 +1437,81 @@ def render_attempt_boxplot(frame: pd.DataFrame) -> tuple[float, float]:
     return float(medians.get("0", np.nan)), float(medians.get("3+", np.nan))
 
 
+def build_interaction_story(
+    frame: pd.DataFrame, min_cell_n: int = 30
+) -> list[str]:
+    """Build filter-aware Page 3 insights without changing chart calculations."""
+    insufficient = "Không đủ số lượng quan sát để đưa ra nhận xét."
+    if frame.empty:
+        return [insufficient]
+
+    low_profile = frame.loc[
+        frame["engagement_quartile"].astype(str).eq("25% thấp nhất")
+        & frame["assessment_score_quartile"].eq("25% thấp nhất")
+    ]
+    high_profile = frame.loc[
+        frame["engagement_quartile"].astype(str).eq("25% cao nhất")
+        & frame["assessment_score_quartile"].eq("25% cao nhất")
+    ]
+    if len(low_profile) >= min_cell_n and len(high_profile) >= min_cell_n:
+        low_rate = float(low_profile["At_Risk"].mean())
+        high_rate = float(high_profile["At_Risk"].mean())
+        profile_message = (
+            "Tín hiệu phối hợp: trong phạm vi đang lọc, nhóm có tương tác VLE và "
+            f"điểm assessment cùng thuộc 25% thấp nhất có tỷ lệ Fail {low_rate:.1%} "
+            f"trên {len(low_profile):,} lượt học. Ở nhóm cùng thuộc 25% cao nhất, "
+            f"tỷ lệ này là {high_rate:.1%} trên {len(high_profile):,} lượt học, tạo "
+            f"khoảng cách {abs(low_rate - high_rate) * 100:.1f} điểm phần trăm. Đây là tín "
+            "hiệu để ưu tiên rà soát tại ngày 105, không phải bằng chứng rằng hai yếu "
+            "tố này trực tiếp gây ra Fail."
+        )
+    else:
+        profile_message = insufficient
+
+    first_time = frame.loc[frame["num_of_prev_attempts"].lt(1)]
+    repeated = frame.loc[frame["num_of_prev_attempts"].ge(1)]
+    if len(first_time) >= min_cell_n and len(repeated) >= min_cell_n:
+        first_rate = float(first_time["At_Risk"].mean())
+        repeat_rate = float(repeated["At_Risk"].mean())
+        repeat_gap = repeat_rate - first_rate
+        comparison = "cao hơn" if repeat_gap >= 0 else "thấp hơn"
+        previous_message = (
+            "Lịch sử học lại: các lượt học có ít nhất một lần học trước ghi nhận tỷ "
+            f"lệ Fail {repeat_rate:.1%} (N={len(repeated):,}), {comparison} "
+            f"{abs(repeat_gap) * 100:.1f} điểm phần trăm so với nhóm học lần đầu "
+            f"({first_rate:.1%}, N={len(first_time):,}). Vì vậy, kinh nghiệm học trước "
+            "không nên mặc nhiên được xem là yếu tố bảo vệ; cố vấn cần tìm hiểu trở "
+            "ngại còn tồn tại từ lần học trước."
+        )
+    else:
+        previous_message = insufficient
+
+    context = (
+        frame.groupby(["highest_education", "imd_band"], observed=True)
+        .agg(fail_rate=("At_Risk", "mean"), attempts=("id_student", "size"))
+        .reset_index()
+    )
+    eligible = context.loc[context["attempts"].ge(min_cell_n)].sort_values(
+        ["fail_rate", "attempts"], ascending=[False, False]
+    )
+    if eligible.empty:
+        context_message = insufficient
+    else:
+        top = eligible.iloc[0]
+        education = EDUCATION_LABELS.get(
+            str(top["highest_education"]), str(top["highest_education"])
+        )
+        context_message = (
+            f"Bối cảnh học vấn và IMD: trong các tổ hợp có ít nhất {min_cell_n:,} "
+            f"lượt học, nhóm {education} tại mức IMD {top['imd_band']} ghi nhận tỷ lệ "
+            f"Fail cao nhất là {float(top['fail_rate']):.1%} (N={int(top['attempts']):,}). "
+            "Các biến này chỉ nên dùng để nhận diện nhu cầu hỗ trợ ở cấp nhóm, không "
+            "làm căn cứ duy nhất để đánh giá một cá nhân."
+        )
+
+    return [profile_message, previous_message, context_message]
+
+
 def render_interaction_page() -> None:
     render_header(
         "Trang 3 · Kết hợp nhiều yếu tố",
@@ -1463,42 +1538,9 @@ def render_interaction_page() -> None:
         st.warning("Bộ lọc hiện tại không có lượt học trong snapshot ngày 105.")
         return
 
-    low_profile = frame.loc[
-        frame["engagement_quartile"].astype(str).eq("25% thấp nhất")
-        & frame["assessment_score_quartile"].eq("25% thấp nhất")
-    ]
-    high_profile = frame.loc[
-        frame["engagement_quartile"].astype(str).eq("25% cao nhất")
-        & frame["assessment_score_quartile"].eq("25% cao nhất")
-    ]
-    low_rate = float(low_profile["At_Risk"].mean())
-    high_rate = float(high_profile["At_Risk"].mean())
-    low_n = len(low_profile)
-    high_n = len(high_profile)
-    previous_rates = frame.assign(
-        has_previous_attempt=frame["num_of_prev_attempts"].ge(1)
-    ).groupby("has_previous_attempt")["At_Risk"].mean()
-    first_rate = float(previous_rates.get(False, np.nan))
-    repeat_rate = float(previous_rates.get(True, np.nan))
-    previous_message = (
-        f"Sinh viên từng học học phần này trước đó có tỷ lệ trượt {repeat_rate:.1%}, "
-        f"cao hơn nhóm học lần đầu {first_rate:.1%}."
-        if pd.notna(first_rate) and pd.notna(repeat_rate)
-        else "Phạm vi lọc chưa đủ dữ liệu để so sánh nhóm học lần đầu và nhóm từng học trước."
-    )
-    profile_message = (
-        f"Khi mức tham gia trực tuyến và điểm bài tập đều thấp, tỷ lệ trượt là {low_rate:.1%}; "
-        f"khi cả hai đều cao, tỷ lệ này chỉ còn {high_rate:.1%}."
-        if pd.notna(low_rate) and pd.notna(high_rate) and low_n and high_n
-        else "Phạm vi lọc chưa đủ cả hai hồ sơ VLE thấp–điểm thấp và VLE cao–điểm cao để so sánh."
-    )
     render_story(
         "STORY · Nhận định khi kết hợp nhiều yếu tố",
-        [
-            profile_message,
-            previous_message,
-            "Kết luận trọng tâm là tiến độ học và mức tham gia; học vấn, hoàn cảnh khu vực và nơi ở chỉ là bối cảnh để xem xét thêm, không phải căn cứ quy kết cá nhân.",
-        ],
+        build_interaction_story(frame, min_cell_n=30),
     )
     render_engagement_assessment_heatmap(frame)
     render_interaction_heatmap(frame)
@@ -1668,29 +1710,86 @@ def render_model_factors() -> None:
     polish_figure(figure, height=500)
     st.plotly_chart(figure, width="stretch")
     st.caption(
-        "Đây là mức liên hệ chung của mô hình sau khi đã xét đồng thời các biến, không phải "
-        "lời giải thích riêng cho từng sinh viên. Hệ số dương đi cùng nguy cơ trượt cao hơn; "
-        "hệ số âm đi cùng nguy cơ thấp hơn."
+        "Hệ số là kết quả toàn cục của mô hình, không thay đổi theo bộ lọc nhân khẩu học "
+        "phía trên. Đây là mức liên hệ sau khi đã xét đồng thời các biến, không phải lời "
+        "giải thích riêng cho từng lượt học hay bằng chứng nhân quả. Hệ số dương đi cùng "
+        "nguy cơ trượt cao hơn; hệ số âm đi cùng nguy cơ thấp hơn."
     )
 
 
-def risk_profile_message(frame: pd.DataFrame) -> str:
+def build_model_operational_story(
+    frame: pd.DataFrame, min_group_n: int = 30
+) -> list[str]:
+    """Build filter-aware operational insights from verified test predictions."""
+    insufficient = "Không đủ số lượng quan sát để đưa ra nhận xét."
+    if frame.empty or len(frame) < min_group_n:
+        return [insufficient]
+
+    counts = frame["error_type"].value_counts()
+    tp = int(counts.get("TP", 0))
+    tn = int(counts.get("TN", 0))
+    fp = int(counts.get("FP", 0))
+    fn = int(counts.get("FN", 0))
+    actual_fail = tp + fn
+    actual_non_fail = tn + fp
+    threshold_values = frame["prediction_threshold"].dropna().unique()
+    threshold = float(threshold_values[0]) if len(threshold_values) else float("nan")
+
+    if (
+        actual_fail >= min_group_n
+        and actual_non_fail >= min_group_n
+        and pd.notna(threshold)
+    ):
+        recall = tp / actual_fail
+        coverage_message = (
+            f"Độ bao phủ và khối lượng rà soát: tại ngưỡng phân loại {threshold:.3f}, "
+            f"trong {actual_fail:,} lượt học thực sự Fail, mô hình phát hiện đúng "
+            f"{tp:,} và bỏ sót {fn:,} lượt, tương ứng Recall {recall:.1%}. Trong "
+            f"{actual_non_fail:,} lượt thực tế qua môn, mô hình tạo {fp:,} cảnh báo "
+            "nhầm. Đây là sự đánh đổi tại ngưỡng hiện hành: giảm bỏ sót thường làm "
+            "tăng khối lượng trường hợp mà cố vấn phải rà soát."
+        )
+        blind_spot_message = (
+            f"Điểm mù: {fn:,} lượt học thực sự Fail không được mô hình cảnh báo. Vì "
+            "vậy, kết quả mô hình chỉ nên dùng để sắp xếp ưu tiên hỗ trợ, không thay "
+            "thế đánh giá chuyên môn hoặc quan sát trực tiếp của cố vấn."
+        )
+    else:
+        coverage_message = insufficient
+        blind_spot_message = insufficient
+
     high = frame.loc[frame["risk_level"].eq("High")]
     low = frame.loc[frame["risk_level"].eq("Low")]
-    if high.empty or low.empty:
-        return "Bộ lọc hiện tại chưa đủ cả nhóm cảnh báo cao và thấp để đối chiếu đặc điểm."
-    high_active = high["vle_active_days_last_28_days"].median()
-    low_active = low["vle_active_days_last_28_days"].median()
-    high_gap = high["vle_days_since_last_activity"].median()
-    low_gap = low["vle_days_since_last_activity"].median()
-    high_completion = high["assessment_completion_rate_cutoff"].median()
-    low_completion = low["assessment_completion_rate_cutoff"].median()
-    return (
-        f"Nhóm cảnh báo cao có trung vị {high_active:.0f} ngày hoạt động VLE trong 28 ngày "
-        f"gần nhất và hoàn thành {high_completion:.0%} bài đã đến hạn; nhóm cảnh báo thấp lần lượt "
-        f"là {low_active:.0f} ngày và {low_completion:.0%}. Khoảng cách từ lần hoạt động gần nhất "
-        f"là {high_gap:.0f} so với {low_gap:.0f} ngày."
-    )
+    profile_columns = [
+        "vle_active_days_last_28_days",
+        "vle_days_since_last_activity",
+        "assessment_completion_rate_cutoff",
+    ]
+    if (
+        len(high) >= min_group_n
+        and len(low) >= min_group_n
+        and not high[profile_columns].median().isna().any()
+        and not low[profile_columns].median().isna().any()
+    ):
+        high_median = high[profile_columns].median()
+        low_median = low[profile_columns].median()
+        profile_message = (
+            "Điểm chạm có thể hành động: trong phạm vi đang lọc, nhóm dự báo rủi ro "
+            f"cao có trung vị {high_median['vle_active_days_last_28_days']:.0f} ngày "
+            f"hoạt động VLE trong 28 ngày gần nhất, cách lần tương tác gần nhất "
+            f"{high_median['vle_days_since_last_activity']:.0f} ngày và hoàn thành "
+            f"{high_median['assessment_completion_rate_cutoff']:.0%} assessment đến "
+            f"hạn (N={len(high):,}). Nhóm rủi ro thấp lần lượt là "
+            f"{low_median['vle_active_days_last_28_days']:.0f} ngày, "
+            f"{low_median['vle_days_since_last_activity']:.0f} ngày và "
+            f"{low_median['assessment_completion_rate_cutoff']:.0%} (N={len(low):,}). "
+            "Đây là những tín hiệu phù hợp để mở đầu việc kiểm tra trở ngại học tập, "
+            "không phải bằng chứng về tác động của một biện pháp can thiệp."
+        )
+    else:
+        profile_message = insufficient
+
+    return [coverage_message, blind_spot_message, profile_message]
 
 
 def render_prediction_page() -> None:
@@ -1755,15 +1854,9 @@ def render_prediction_page() -> None:
         f"{test_metric['balanced_accuracy']:.1%}, ROC-AUC {test_metric['roc_auc']:.3f}."
     )
 
-    fn = int(frame["error_type"].eq("FN").sum())
     render_story(
         "STORY · Dự báo giúp hiểu yếu tố nào?",
-        [
-            f"Trong phạm vi đang xem, mô hình phân loại đúng khoảng {accuracy * 100:.0f}/100 lượt học và phát hiện khoảng {recall * 100:.0f}/100 lượt thực sự trượt.",
-            f"Trong 100 cảnh báo trượt, khoảng {precision * 100:.0f} cảnh báo đúng; mô hình còn bỏ sót {fn:,} lượt trượt trong phạm vi này.",
-            risk_profile_message(frame),
-            "Kết luận: gián đoạn hoạt động VLE, bỏ lỡ bài đến hạn và tích lũy điểm thấp là các yếu tố liên quan rõ nhất đến Fail; cải thiện cần tập trung vào duy trì học đều và hoàn thành bài đúng hạn.",
-        ],
+        build_model_operational_story(frame),
     )
 
     st.subheader("Độ tin cậy và các yếu tố liên quan đến dự báo Fail")
@@ -1771,8 +1864,11 @@ def render_prediction_page() -> None:
     render_confusion_matrix(frame)
     render_model_factors()
     st.info(
-        "Hướng cải thiện rút ra từ mô hình: duy trì hoạt động VLE đều, hoàn thành bài đến hạn "
-        "và củng cố điểm quá trình từ giữa khóa."
+        "Định hướng hành động: trong số các hệ số toàn cục đang hiển thị, các tín hiệu "
+        "hành vi đến ngày 105 có độ lớn nổi bật. Gián đoạn VLE và bài đến hạn chưa nộp "
+        "là những điểm chạm để cố vấn ưu tiên rà soát; việc duy trì hoạt động, hoàn thành "
+        "assessment và củng cố điểm quá trình là nội dung phù hợp để trao đổi hỗ trợ. "
+        "Dashboard không ước lượng tác động nhân quả của một biện pháp can thiệp."
     )
 
 
