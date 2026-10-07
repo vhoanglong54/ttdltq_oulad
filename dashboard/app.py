@@ -623,6 +623,40 @@ def render_vle_timeline(
     st.caption("Nhóm Qua môn tương tác nhiều hơn gấp 2.5 lần ngay từ trước khi khóa học bắt đầu. Đã lọc nhóm Rút học sớm để đảm bảo so sánh công bằng.")
     return 0.0, 0.0
 
+def comparison_message(
+    frame: pd.DataFrame,
+    group_column: str,
+    label: str,
+    display_labels: dict[str, str] | None = None,
+) -> str:
+    grouped = (
+        frame.groupby(group_column, observed=True)["At_Risk"]
+        .agg(["mean", "size"])
+        .sort_values("mean")
+    )
+    if grouped.empty:
+        return f"Không đủ dữ liệu để so sánh theo {label}."
+    if len(grouped) == 1:
+        row = grouped.iloc[0]
+        group = grouped.index[0]
+        display = (display_labels or {}).get(str(group), str(group))
+        return (
+            f"{label} {display} có tỷ lệ trượt {row['mean']:.1%} "
+            f"(N={int(row['size']):,})."
+        )
+    low, high = grouped.iloc[0], grouped.iloc[-1]
+    high_group = str(grouped.index[-1])
+    low_group = str(grouped.index[0])
+    high_display = (display_labels or {}).get(high_group, high_group)
+    low_display = (display_labels or {}).get(low_group, low_group)
+    return (
+        f"Tỷ lệ trượt theo {label.lower()} cao nhất ở {high_display} "
+        f"({high['mean']:.1%}, N={int(high['size']):,}) và thấp nhất ở "
+        f"{low_display} ({low['mean']:.1%}, N={int(low['size']):,})."
+    )
+
+
+
 def render_overview_page() -> None:
     render_header(
         "Trang 1 · Bức tranh kết quả học tập",
