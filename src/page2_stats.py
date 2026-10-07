@@ -19,7 +19,9 @@ def build_page2_stats():
     # 1. df105 - keep only people who didn't withdraw early
     df["early_wd"] = df["date_unregistration"].le(105)
     df105 = df[~df["early_wd"]].copy()
-    df105["not_complete"] = df105["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
+    
+    # Target is At_Risk (Fail only)
+    df105["At_Risk"] = df105["final_result"].eq("Fail").astype(int)
     
     # Merge snapshot features into df105
     d = df105.merge(snapshot, on=ATTEMPT_KEY, how="inner", suffixes=("", "_snap"))
@@ -36,19 +38,25 @@ def build_page2_stats():
     feats = ["submit_rate", "total_clicks", "active_days", "clicks_last14", "avg_score", "num_of_prev_attempts", "studied_credits"]
     d_clean = d.dropna(subset=feats).copy()
     
+    # Only keep Pass, Distinction, Fail (drop Withdrawn for model evaluation)
+    d_model = d_clean[d_clean["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    
     rows = []
     for f in feats:
-        a = roc_auc_score(d_clean["not_complete"], d_clean[f])
+        a = roc_auc_score(d_model["At_Risk"], d_model[f])
         rows.append({"yeu_to": f, "AUC": max(a, 1-a), "huong": "tăng -> rủi ro tăng" if a > 0.5 else "tăng -> rủi ro giảm"})
     rank = pd.DataFrame(rows).sort_values("AUC", ascending=False)
     rank.to_csv(OUTPUT_DIR / "auc_ranking.csv", index=False)
     
     # 3. Actionable Rule metrics
     q1 = d["total_clicks"].quantile(0.25)
-    flag = (d["submit_rate"] == 0) & (d["total_clicks"] <= q1)
-    share = flag.mean()
-    precision = d.loc[flag, "not_complete"].mean() if flag.sum() > 0 else 0
-    recall = d.loc[flag, "not_complete"].sum() / d["not_complete"].sum() if d["not_complete"].sum() > 0 else 0
+    
+    # Evaluate rule on the cohort (df105 without early_wd)
+    d_rule = d[d["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    flag_rule = (d_rule["submit_rate"] == 0) & (d_rule["total_clicks"] <= q1)
+    share = flag_rule.mean()
+    precision = d_rule.loc[flag_rule, "At_Risk"].mean() if flag_rule.sum() > 0 else 0
+    recall = d_rule.loc[flag_rule, "At_Risk"].sum() / d_rule["At_Risk"].sum() if d_rule["At_Risk"].sum() > 0 else 0
     
     pd.DataFrame([{"share": share, "precision": precision, "recall": recall}]).to_csv(OUTPUT_DIR / "rule_metrics.csv", index=False)
     
@@ -66,19 +74,21 @@ def build_page2_stats():
     
     # 5. Resource type ratio
     vle = pd.read_csv(VLE_DAY105_PATH)
-    # vle is aggregated by final_result and activity_type
-    vle["not_complete"] = vle["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
-    per = vle.groupby(["not_complete", "activity_type"], observed=True)["sum_click"].sum().reset_index()
+    # Filter to Pass/Distinction vs Fail
+    vle = vle[vle["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    vle["At_Risk"] = vle["final_result"].eq("Fail").astype(int)
+    per = vle.groupby(["At_Risk", "activity_type"], observed=True)["sum_click"].sum().reset_index()
     
-    # Get students count per group (we use df instead of df105 because VLE data wasn't filtered for early_wd)
-    df["not_complete"] = df["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
-    totals = df.groupby("not_complete")["id_student"].nunique().reset_index(name="students")
+    df_vle = df[df["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    df_vle["At_Risk"] = df_vle["final_result"].eq("Fail").astype(int)
+    totals = df_vle.groupby("At_Risk")["id_student"].nunique().reset_index(name="students")
     
-    per = per.merge(totals, on="not_complete")
+    per = per.merge(totals, on="At_Risk")
     per["avg_click"] = per["sum_click"] / per["students"]
     
-    avg = per.pivot(index="activity_type", columns="not_complete", values="avg_click").fillna(0)
-    avg["ratio"] = avg[0] / avg[1].replace(0, np.nan)
+    avg = per.pivot(index="activity_type", columns="At_Risk", values="avg_click").fillna(0)
+    # Add small epsilon to avoid divide by zero
+    avg["ratio"] = avg[0] / (avg[1] + 1e-6)
     avg.reset_index().to_csv(OUTPUT_DIR / "resource_type_ratio.csv", index=False)
     
 if __name__ == "__main__":

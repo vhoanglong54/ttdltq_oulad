@@ -46,8 +46,8 @@ RESULT_ORDER = ["Distinction", "Pass", "Fail", "Withdrawn"]
 RESULT_COLORS = {
     "Distinction": "#0F766E",
     "Pass": "#2563EB",
-    "Fail": "#F97316",
-    "Withdrawn": "#DC2626",
+    "Fail": "#DC2626",
+    "Withdrawn": "#F97316",
 }
 RESULT_LABELS = {
     "Distinction": "Xuất sắc",
@@ -573,9 +573,11 @@ def render_vle_timeline(
         daily, genders, age_bands, education_levels, imd_bands, regions
     )
     daily = daily.loc[daily["date"].le(105)].copy()
-    daily["Nhóm"] = daily["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Không hoàn thành")
+    daily = daily[daily["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    daily["Nhóm"] = daily["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Trượt")
     totals = frame.copy()
-    totals["Nhóm"] = totals["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Không hoàn thành")
+    totals = totals[totals["final_result"].isin(["Pass", "Distinction", "Fail"])].copy()
+    totals["Nhóm"] = totals["final_result"].apply(lambda x: "Qua môn / Xuất sắc" if x in ["Pass", "Distinction"] else "Trượt")
     totals = totals.groupby("Nhóm").size().rename("attempts")
     
     daily = daily.groupby(["Nhóm", "date"], as_index=False)["sum_click"].sum()
@@ -603,7 +605,7 @@ def render_vle_timeline(
         color="Nhóm",
         color_discrete_map={
             "Qua môn / Xuất sắc": "#34a853",
-            "Không hoàn thành": "#9c27b0"
+            "Trượt": "#DC2626"
         },
         labels={
             "avg_click_7d": "Tương tác VLE trung bình (MA 7 ngày)",
@@ -618,8 +620,92 @@ def render_vle_timeline(
     figure.add_vline(x=0, line_dash="dash", line_color="gray", annotation_text="Bắt đầu khóa học")
     polish_figure(figure, height=450)
     st.plotly_chart(figure, width="stretch")
-    st.caption("Nhóm Qua môn tương tác nhiều hơn gấp 2.5 lần ngay từ trước khi khóa học bắt đầu. Lưu ý: Do hạn chế dữ liệu, bảng VLE này chưa lọc nhóm Rút học sớm, nên sự sụt giảm ở cuối một phần do họ ngừng hoạt động.")
+    st.caption("Nhóm Qua môn tương tác nhiều hơn gấp 2.5 lần ngay từ trước khi khóa học bắt đầu. Đã lọc nhóm Rút học sớm để đảm bảo so sánh công bằng.")
     return 0.0, 0.0
+
+def render_overview_page() -> None:
+    render_header(
+        "Trang 1 · Bức tranh kết quả học tập",
+        "Sinh viên đang đạt kết quả như thế nào?",
+        "Bắt đầu từ cơ cấu tổng thể, sau đó xem kết quả thay đổi theo vùng và nền tảng đầu vào.",
+        "Phạm vi mô tả toàn khóa · một dòng = một lượt đăng ký học",
+    )
+    render_term_guide(
+        [
+            ("Xuất sắc", "Distinction, mức kết quả cao hơn Qua môn"),
+            ("Trượt học phần", "kết quả cuối là Fail; rút học được tách riêng"),
+            ("Lượt học", "một lần đăng ký học; một sinh viên có thể xuất hiện nhiều lần"),
+        ]
+    )
+    frame = analysis_data()
+    genders, age_bands, education_levels, imd_bands = context_filters(
+        frame, key_prefix="overview"
+    )
+    base = filter_context(
+        frame, genders, age_bands, education_levels, imd_bands, []
+    )
+    if base.empty:
+        st.warning("Bộ lọc hiện tại không có lượt học.")
+        return
+
+    active_region = st.session_state.get("academic_region")
+    valid_regions = set(base["region"].dropna().astype(str))
+    if active_region not in valid_regions:
+        active_region = None
+        st.session_state["academic_region"] = None
+    effective = filter_context(
+        base,
+        [],
+        [],
+        [],
+        [],
+        [active_region] if active_region else [],
+    )
+
+    if active_region:
+        notice = st.columns([4, 1])
+        notice[0].markdown(
+            f'<div class="active-filter"><b>Cross-filter từ bản đồ:</b> {html.escape(active_region)}</div>',
+            unsafe_allow_html=True,
+        )
+        if notice[1].button(
+            "Bỏ lọc vùng", key="clear_academic_region", width="stretch"
+        ):
+            st.session_state["academic_region"] = None
+            st.session_state["map_key_version"] = (
+                st.session_state.get("map_key_version", 0) + 1
+            )
+            st.rerun()
+
+    render_academic_kpis(effective)
+    st.caption(
+        f"Phạm vi hiện tại: {len(effective):,} lượt học · "
+        f"{effective['id_student'].nunique():,} sinh viên"
+        + (f" · vùng {active_region}" if active_region else " · tất cả vùng")
+    )
+    fail_rate = float(effective["At_Risk"].mean())
+    withdrawn_rate = float(effective["final_result"].eq("Withdrawn").mean())
+    render_story(
+        "STORY · Nhận định chính",
+        [
+            f"Cứ 100 lượt học thì khoảng {fail_rate * 100:.0f} lượt trượt; rút học là một kết quả khác và chiếm {withdrawn_rate:.1%}.",
+            comparison_message(
+                effective,
+                "highest_education",
+                "Trình độ trước khi nhập học",
+                EDUCATION_LABELS,
+            ),
+            comparison_message(base, "region", "Vùng cư trú")
+            + " <b>Nghịch lý địa lý:</b> Sự chênh lệch này đi cùng với khác biệt về kinh tế-xã hội (IMD) và học vấn đầu vào, không phải do vùng địa lý trực tiếp gây ra. Địa lý chỉ đóng vai trò là bối cảnh.",
+        ],
+    )
+
+    st.subheader("Kết quả tổng thể và sự khác biệt theo bối cảnh")
+    render_outcome_overview(effective)
+    render_region_map(base, active_region)
+    render_score_distribution(effective)
+
+
 
 def add_behavior_bands(frame: pd.DataFrame) -> pd.DataFrame:
     data = frame.copy()
@@ -645,10 +731,10 @@ def add_behavior_bands(frame: pd.DataFrame) -> pd.DataFrame:
 
 def render_completion_chart(frame: pd.DataFrame) -> tuple[float, float]:
     order = ["0%", "Trên 0% đến 50%", "Trên 50% đến dưới 100%", "100%"]
-    frame["not_complete"] = frame["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
+    frame["At_Risk"] = frame["final_result"].eq("Fail").astype(int)
     grouped = (
         frame.groupby("completion_band", observed=True)
-        .agg(at_risk_rate=("not_complete", "mean"), attempts=("id_student", "size"))
+        .agg(at_risk_rate=("At_Risk", "mean"), attempts=("id_student", "size"))
         .reindex(order)
         .dropna(subset=["at_risk_rate"])
         .reset_index()
@@ -663,9 +749,9 @@ def render_completion_chart(frame: pd.DataFrame) -> tuple[float, float]:
         text="at_risk_rate",
         labels={
             "completion_band": "Mức hoàn thành bài đã đến hạn",
-            "at_risk_rate": "Tỷ lệ Không hoàn thành",
+            "at_risk_rate": "Tỷ lệ trượt",
         },
-        title="6 · Hoàn thành bài tập và tỷ lệ Không hoàn thành",
+        title="6 · Hoàn thành bài tập và tỷ lệ trượt",
     )
     figure.update_traces(
         marker_color="#1f77b4",
@@ -690,7 +776,7 @@ def render_completion_chart(frame: pd.DataFrame) -> tuple[float, float]:
 
 def render_auc_ranking() -> None:
     try:
-        rank = dashboard_mart("auc_ranking.csv")
+        rank = dashboard_mart("auc_ranking.csv", ("yeu_to", "AUC", "huong"))
     except Exception:
         return
     
@@ -708,7 +794,7 @@ def render_auc_ranking() -> None:
     
     fig = px.bar(
         rank, x="AUC", y="yeu_to", orientation="h", text="AUC",
-        title="4 · Mức độ cảnh báo (AUC) của từng yếu tố đơn lẻ",
+        title="4 · Mức độ phân biệt (AUC) của từng yếu tố đơn lẻ",
         labels={"yeu_to": "Yếu tố", "AUC": "Khả năng phân biệt (AUC)"}
     )
     fig.update_traces(texttemplate="%{text:.3f}", textposition="outside")
@@ -719,8 +805,8 @@ def render_auc_ranking() -> None:
 
 def render_delay_score_box() -> None:
     try:
-        tab = dashboard_mart("delay_score_buckets.csv")
-        sp = dashboard_mart("delay_spearman.csv").iloc[0]["spearman"]
+        tab = dashboard_mart("delay_score_buckets.csv", ("delay_bucket", "median", "count"))
+        sp = dashboard_mart("delay_spearman.csv", ("spearman",)).iloc[0]["spearman"]
     except Exception:
         return
     fig = px.bar(
@@ -731,17 +817,17 @@ def render_delay_score_box() -> None:
     fig.update_traces(texttemplate="N=%{text:,}", textposition="outside")
     polish_figure(fig, height=400, legend="none")
     st.plotly_chart(fig, width="stretch")
-    st.caption(f"Đã chuẩn hóa độ khó từng bài. Hệ số tương quan Spearman = {sp:.2f}. Nộp càng trễ thì điểm càng thấp.")
+    st.caption(f"Đã chuẩn hóa độ khó từng bài. Hệ số tương quan Spearman = {sp:.2f}. Nộp trễ quá 7 ngày làm điểm giảm sâu, trong khi nộp sớm không chắc điểm đã cao hơn đúng hạn.")
 
 def render_resource_type_ratio() -> None:
     try:
-        avg = dashboard_mart("resource_type_ratio.csv")
+        avg = dashboard_mart("resource_type_ratio.csv", ("activity_type", "0", "1", "ratio"))
     except Exception:
         return
     avg = avg.sort_values("ratio", ascending=True)
     fig = px.scatter(
         avg, x="ratio", y="activity_type", 
-        title="8 · Nhóm Qua môn tương tác nhiều gấp mấy lần nhóm Không hoàn thành?",
+        title="8 · Nhóm Qua môn tương tác nhiều gấp mấy lần nhóm Trượt?",
         labels={"ratio": "Tỷ lệ mức dùng (Nhóm Qua môn / Nhóm Không hoàn thành)", "activity_type": "Loại tài nguyên"}
     )
     fig.update_traces(marker=dict(size=10, color="#1f77b4"))
@@ -776,8 +862,11 @@ def render_behavior_page() -> None:
     filtered = filter_context(
         frame, genders, age_bands, education_levels, imd_bands, []
     )
+    snapshot = feature_snapshot()
+    snapshot["early_wd"] = snapshot["date_unregistration"].le(105)
+    snapshot = snapshot[~snapshot["early_wd"]].copy()
     snapshot = filter_snapshot_context(
-        feature_snapshot(), genders, age_bands, education_levels, imd_bands
+        snapshot, genders, age_bands, education_levels, imd_bands
     )
     if filtered.empty or snapshot.empty:
         st.warning("Bộ lọc hiện tại không có đủ lượt học cho phân tích hành vi.")
@@ -785,7 +874,7 @@ def render_behavior_page() -> None:
     snapshot = add_behavior_bands(snapshot)
 
     try:
-        rule = dashboard_mart("rule_metrics.csv").iloc[0]
+        rule = dashboard_mart("rule_metrics.csv", ("share", "precision", "recall")).iloc[0]
         story_text = f"Chỉ {rule['share']:.1%} lượt học thuộc nhóm chưa hoàn thành bài và ít tham gia, nhưng lại chứa tới {rule['recall']:.1%} số ca không hoàn thành, với độ chính xác {rule['precision']:.1%}."
     except Exception:
         story_text = "Nên ưu tiên hỗ trợ sinh viên vừa chưa hoàn thành bài đến hạn vừa ít tham gia."
