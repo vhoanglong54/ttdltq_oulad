@@ -44,3 +44,6 @@ models/**
 .DS_Store
 Thumbs.db
 ~$*.docx
+
+# Ảnh QA local của bản target cũ; bằng chứng chính thức hiện dùng hậu tố v5.
+dashboard/evidence/screenshots/*-v3.png
