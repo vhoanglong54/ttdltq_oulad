@@ -10,7 +10,7 @@
 4. **Hai bất lợi cộng dồn làm nhóm rủi ro nổi bật:** VLE thấp + điểm thấp có tỷ lệ Fail 65,56%; cao ở cả hai chỉ 4,58%.
 5. **Lịch sử học lại cần được chú ý:** nhóm từng học học phần có tỷ lệ Fail 48,83%; học lần đầu 29,02%.
 6. **Có chênh lệch vùng nhưng địa lý là bối cảnh:** Wales 29,72%; South Region 17,59%.
-7. **Nộp muộn đi cùng kết quả kém hơn:** quartile độ trễ cao nhất có tỷ lệ Fail 36,91%; thấp nhất 24,52%.
+7. **Nộp muộn ảnh hưởng điểm số:** nộp trễ quá 7 ngày làm điểm trung bình (đã trừ độ khó bài) giảm mạnh (-6.77), nhưng nộp sớm chưa chắc điểm cao hơn đúng hạn.
 8. **Hoạt động gần đây đặc biệt hữu ích để can thiệp:** 25% ít ngày hoạt động nhất trong 28 ngày có tỷ lệ Fail 69,02%; 25% nhiều ngày nhất 9,65%.
 
 ## Bảng bằng chứng
@@ -23,7 +23,7 @@
 | INS-04 | VLE thấp + điểm thấp Fail **65,56%** (N=1.507), cao + cao **4,58%** (N=2.098), chênh **60,98 điểm %**. | Snapshot ngày 105, nhóm có điểm để xếp quartile. | `engagement_assessment_matrix.csv` | Dùng hai tín hiệu cùng lúc tốt hơn nhìn một chỉ số; không phải công thức nhân quả. |
 | INS-05 | Có ≥1 lần học trước Fail **48,83%** (N=2.697), lần đầu **29,02%** (N=19.730), chênh **19,82 điểm %**. | Cohort model ngày 105. | `previous_attempts.csv` | Cho phép ưu tiên hỗ trợ bổ sung, không gắn nhãn năng lực. |
 | INS-06 | Wales Fail **29,72%** (N=2.086), South Region **17,59%** (N=3.092), chênh **12,13 điểm %**. | Toàn khóa; vùng cư trú OULAD. | `region_risk.csv`, Geographic Map | Xem thêm cơ cấu module/IMD/cohort; bản đồ không chứng minh vùng gây Fail. |
-| INS-07 | Quartile độ trễ nộp bài trung bình cao nhất Fail **36,91%** (N=5.270), thấp nhất **24,52%** (N=5.270), chênh **12,39 điểm %**. | Lượt đủ điều kiện ngày 105 có ít nhất một bài đã nộp. | `submission_delay_quartiles.csv`, scatter | Nhắc nộp đúng hạn; nhóm chưa nộp được phản ánh riêng qua completion. |
+| INS-07 | Nộp trễ >7 ngày có median điểm chênh lệch **-6.77**, trong khi đúng hạn là **+0.60** và sớm 1-7 ngày là **+5.18**. Spearman = **-0.09**. | Các bài tập đã nộp. | `delay_score_buckets.csv`, bar chart | Nộp trễ >7 ngày kéo điểm xuống rõ rệt. Xu hướng không tuyến tính hoàn toàn. |
 | INS-08 | Quartile ít ngày hoạt động nhất trong 28 ngày Fail **69,02%** (N=5.607), nhiều nhất **9,65%** (N=5.607), chênh **59,37 điểm %**. | Cohort model ngày 105. | `feature_snapshot.csv`, coefficient model | Theo dõi sự gián đoạn gần đây để liên hệ hỗ trợ; VLE không bao quát học offline. |
 
 ## Story dùng khi thuyết trình
@@ -34,7 +34,7 @@
 4. Kết hợp VLE thấp với điểm thấp để xác định nhóm bất lợi cộng dồn.
 5. Sau insight dữ liệu mới chuyển sang Logistic Regression: dự báo Fail ở ngày 105, kiểm tra sai số và giải thích các tín hiệu liên quan ở cấp nhóm.
 
-Insight bổ sung từ visual tài nguyên: chênh lệch lớn nhất trong cơ cấu tương tác là `forumng`; nhóm Qua môn/Xuất sắc dành tỷ trọng cao hơn nhóm Trượt khoảng **3,36 điểm %**. Mức chênh này nhỏ hơn nhiều so với completion và tính liên tục của hoạt động VLE, nên loại tài nguyên chỉ là tín hiệu phụ.
+Insight bổ sung từ visual tài nguyên: nhóm Qua môn/Xuất sắc có tỷ lệ tương tác các tài nguyên như `forumng`, `quiz` cao gấp **~2,3 đến 2,8 lần** nhóm Trượt. Mức độ cảnh báo của loại tài nguyên vẫn thấp hơn so với việc hoàn thành bài và cường độ tương tác tổng thể, nên đây là tín hiệu phụ hỗ trợ cho việc thiết kế can thiệp.
 
 ## Cách kiểm tra lại
 

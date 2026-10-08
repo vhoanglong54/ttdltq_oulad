@@ -83,6 +83,8 @@ class DashboardKpis:
     learners: int
     at_risk_count: int
     at_risk_rate: float
+    not_complete_count: int
+    not_complete_rate: float
     average_assessment_score: float
     vle_total_clicks: int
 
@@ -119,6 +121,7 @@ def load_analysis_data() -> pd.DataFrame:
     # Keep the existing calculation API stable while changing the outcome to
     # the approved academic target: Fail only, not Fail + Withdrawn.
     frame["At_Risk"] = frame["Academic_Fail"]
+    frame["not_complete"] = frame["final_result"].isin(["Fail", "Withdrawn"]).astype("int8")
     _assert_attempt_grain(frame, ANALYSIS_PATH.name)
     return frame
 
@@ -188,6 +191,8 @@ def compute_kpis(frame: pd.DataFrame) -> DashboardKpis:
     learners = int(frame["id_student"].nunique()) if attempts else 0
     at_risk_count = int(frame["At_Risk"].sum()) if attempts else 0
     at_risk_rate = at_risk_count / attempts if attempts else float("nan")
+    not_complete_count = int(frame["not_complete"].sum()) if attempts else 0
+    not_complete_rate = not_complete_count / attempts if attempts else float("nan")
 
     scored_count = float(frame["assessment_scored_count"].fillna(0).sum())
     score_sum = float(frame["assessment_score_sum_all_time"].fillna(0).sum())
@@ -199,6 +204,8 @@ def compute_kpis(frame: pd.DataFrame) -> DashboardKpis:
         learners=learners,
         at_risk_count=at_risk_count,
         at_risk_rate=at_risk_rate,
+        not_complete_count=not_complete_count,
+        not_complete_rate=not_complete_rate,
         average_assessment_score=average_score,
         vle_total_clicks=total_clicks,
     )

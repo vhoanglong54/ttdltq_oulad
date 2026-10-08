@@ -40,11 +40,12 @@ Mục tiêu: cho biết kết quả nào phổ biến và khác biệt tập tru
 
 Mục tiêu: chỉ ra yếu tố đo được nào liên quan rõ nhất đến Fail.
 
+- Bar chart ngang: mức độ phân biệt (AUC) của từng yếu tố đơn lẻ so với kết quả Fail.
 - Multi-line: hoạt động VLE theo thời gian của `Fail` và `Pass/Distinction`, kèm deadline.
 - Bar: tỷ lệ Fail theo mức hoàn thành assessment đã đến hạn.
-- Scatter + trendline: ngày nộp trễ và điểm; kích thước theo số lần từng học.
-- Grouped bar: tỷ trọng từng loại tài nguyên VLE trong nhóm `Fail` so với `Pass/Distinction`.
-- Story: so sánh quartile VLE thấp/cao và completion 0%/100%; ưu tiên nhóm vừa ít hoạt động vừa chưa hoàn thành bài.
+- Bar: độ trễ nộp bài và trung vị chênh lệch điểm (đã trừ độ khó bài) kèm tương quan Spearman.
+- Dot plot trục log: tỷ lệ mức dùng tài nguyên (Nhóm Qua môn / Nhóm Fail).
+- Story: nhấn mạnh hoàn thành bài và mức độ tương tác là các tín hiệu cảnh báo mạnh nhất; trình bày rule metrics (độ bao phủ, độ chính xác, tỷ lệ bắt trúng) để ưu tiên nhóm rủi ro cao.
 
 ## Trang 3 — Kết hợp nhiều yếu tố
 
