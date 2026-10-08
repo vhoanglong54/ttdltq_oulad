@@ -223,6 +223,15 @@ def render_story(title: str, bullets: list[str]) -> None:
     )
 
 
+def render_story_hook(title: str, body: str) -> None:
+    """Render a one-paragraph prompt without revealing chart conclusions."""
+    st.markdown(
+        f'<div class="story-card"><h3>{html.escape(title)}</h3>'
+        f'<p style="margin:0;color:#1E293B;">{html.escape(body)}</p></div>',
+        unsafe_allow_html=True,
+    )
+
+
 def format_percent(value: float) -> str:
     return "—" if pd.isna(value) else f"{value:.1%}"
 
@@ -1242,10 +1251,6 @@ def render_engagement_assessment_heatmap(
     )
     polish_figure(figure, height=550, legend="none")
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "25% thấp nhất/cao nhất được tính trong phạm vi phân tích. Mỗi ô kết hợp hai yếu tố; "
-        "N là số lượt học trong ô."
-    )
     low_rate = float(rate.loc["25% thấp nhất", "25% thấp nhất"])
     low_n = int(count.loc["25% thấp nhất", "25% thấp nhất"])
     high_rate = float(rate.loc["25% cao nhất", "25% cao nhất"])
@@ -1347,10 +1352,6 @@ def render_interaction_heatmap(
     )
     polish_figure(figure, height=535, legend="none")
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "Mỗi ô kết hợp hai yếu tố; màu thể hiện tỷ lệ trượt, N là số lượt học. "
-        "Biểu đồ chỉ mô tả bối cảnh, không dùng để quy kết hoàn cảnh gây ra kết quả."
-    )
     eligible = grouped.loc[grouped["attempts"].ge(30)].sort_values(
         "at_risk_rate", ascending=False
     )
@@ -1398,9 +1399,6 @@ def render_attempt_boxplot(frame: pd.DataFrame) -> tuple[float, float]:
     )
     polish_figure(figure, height=500, legend="none")
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "Nhóm 3+ gộp các giá trị từ 3 đến 6 để giữ cỡ mẫu; điểm chỉ dùng dữ liệu có trước hoặc tại ngày 105."
-    )
     medians = data.groupby("previous_attempt_group", observed=True)[
         "assessment_weighted_score_cutoff"
     ].median()
@@ -1408,50 +1406,65 @@ def render_attempt_boxplot(frame: pd.DataFrame) -> tuple[float, float]:
 
 
 def build_interaction_story(
-    frame: pd.DataFrame, min_cell_n: int = 30
+    frame: pd.DataFrame, min_cell_n: int = 30, min_context_n: int = 100
 ) -> list[str]:
     """Build filter-aware Page 3 insights without changing chart calculations."""
     insufficient = "Không đủ số lượng quan sát để đưa ra nhận xét."
     if frame.empty:
         return [insufficient]
 
-    low_profile = frame.loc[
-        frame["engagement_quartile"].astype(str).eq("25% thấp nhất")
-        & frame["assessment_score_quartile"].eq("25% thấp nhất")
-    ]
-    high_profile = frame.loc[
-        frame["engagement_quartile"].astype(str).eq("25% cao nhất")
-        & frame["assessment_score_quartile"].eq("25% cao nhất")
-    ]
-    if len(low_profile) >= min_cell_n and len(high_profile) >= min_cell_n:
-        low_rate = float(low_profile["At_Risk"].mean())
-        high_rate = float(high_profile["At_Risk"].mean())
+    def quartile_cell(engagement: str, score: str) -> pd.DataFrame:
+        return frame.loc[
+            frame["engagement_quartile"].astype(str).eq(engagement)
+            & frame["assessment_score_quartile"].eq(score)
+        ]
+
+    low_low = quartile_cell("25% thấp nhất", "25% thấp nhất")
+    low_high = quartile_cell("25% thấp nhất", "25% cao nhất")
+    high_low = quartile_cell("25% cao nhất", "25% thấp nhất")
+    high_high = quartile_cell("25% cao nhất", "25% cao nhất")
+    comparison_cells = [low_low, low_high, high_low, high_high]
+    if all(len(cell) >= min_cell_n for cell in comparison_cells):
+        low_low_rate = float(low_low["At_Risk"].mean())
+        low_high_rate = float(low_high["At_Risk"].mean())
+        high_low_rate = float(high_low["At_Risk"].mean())
+        high_high_rate = float(high_high["At_Risk"].mean())
         profile_message = (
-            "Tín hiệu phối hợp: trong phạm vi đang lọc, nhóm có tương tác VLE và "
-            f"điểm assessment cùng thuộc 25% thấp nhất có tỷ lệ Fail {low_rate:.1%} "
-            f"trên {len(low_profile):,} lượt học. Ở nhóm cùng thuộc 25% cao nhất, "
-            f"tỷ lệ này là {high_rate:.1%} trên {len(high_profile):,} lượt học, tạo "
-            f"khoảng cách {abs(low_rate - high_rate) * 100:.1f} điểm phần trăm. Đây là tín "
-            "hiệu để ưu tiên rà soát tại ngày 105, không phải bằng chứng rằng hai yếu "
-            "tố này trực tiếp gây ra Fail."
+            "So với nhóm VLE cao và điểm assessment cao "
+            f"({high_high_rate:.1%}), hai tổ hợp chỉ có một tín hiệu thấp đã có tỷ lệ "
+            f"Fail lần lượt là {low_high_rate:.1%} (VLE thấp, điểm cao) và "
+            f"{high_low_rate:.1%} (VLE cao, điểm thấp). Khi cả hai cùng thấp, tỷ lệ này "
+            f"tăng lên {low_low_rate:.1%}. Đây là tổ hợp cần ưu tiên rà soát sớm tại ngày 105."
         )
     else:
         profile_message = insufficient
 
     first_time = frame.loc[frame["num_of_prev_attempts"].lt(1)]
     repeated = frame.loc[frame["num_of_prev_attempts"].ge(1)]
-    if len(first_time) >= min_cell_n and len(repeated) >= min_cell_n:
+    score_frame = frame.dropna(subset=["assessment_weighted_score_cutoff"])
+    first_time_scored = score_frame.loc[score_frame["num_of_prev_attempts"].lt(1)]
+    repeated_scored = score_frame.loc[score_frame["num_of_prev_attempts"].ge(1)]
+    if (
+        len(first_time) >= min_cell_n
+        and len(repeated) >= min_cell_n
+        and len(first_time_scored) >= min_cell_n
+        and len(repeated_scored) >= min_cell_n
+    ):
         first_rate = float(first_time["At_Risk"].mean())
         repeat_rate = float(repeated["At_Risk"].mean())
         repeat_gap = repeat_rate - first_rate
-        comparison = "cao hơn" if repeat_gap >= 0 else "thấp hơn"
+        median_first = float(first_time_scored["assessment_weighted_score_cutoff"].median())
+        median_repeat = float(repeated_scored["assessment_weighted_score_cutoff"].median())
         previous_message = (
-            "Lịch sử học lại: các lượt học có ít nhất một lần học trước ghi nhận tỷ "
-            f"lệ Fail {repeat_rate:.1%} (N={len(repeated):,}), {comparison} "
-            f"{abs(repeat_gap) * 100:.1f} điểm phần trăm so với nhóm học lần đầu "
-            f"({first_rate:.1%}, N={len(first_time):,}). Vì vậy, kinh nghiệm học trước "
-            "không nên mặc nhiên được xem là yếu tố bảo vệ; cố vấn cần tìm hiểu trở "
-            "ngại còn tồn tại từ lần học trước."
+            "Trung vị điểm assessment của nhóm học lần đầu là "
+            f"{median_first:.1f}, còn nhóm từng học lại (gộp 1, 2 và 3+ lần) là "
+            f"{median_repeat:.1f}, chênh "
+            f"{abs(median_repeat - median_first):.1f} điểm. Trong khi đó, tỷ lệ Fail của "
+            f"nhóm học lại ({repeat_rate:.1%}) {'cao hơn' if repeat_gap >= 0 else 'thấp hơn'} "
+            f"nhóm học lần đầu ({first_rate:.1%}) {abs(repeat_gap) * 100:.1f} điểm phần trăm. "
+            "Khoảng cách này cho thấy điểm assessment một mình chưa phản ánh đầy đủ khác "
+            "biệt về kết quả; lịch sử học lại nên được đọc cùng tiến độ nộp bài và mức "
+            "tham gia VLE."
         )
     else:
         previous_message = insufficient
@@ -1461,22 +1474,32 @@ def build_interaction_story(
         .agg(fail_rate=("At_Risk", "mean"), attempts=("id_student", "size"))
         .reset_index()
     )
-    eligible = context.loc[context["attempts"].ge(min_cell_n)].sort_values(
-        ["fail_rate", "attempts"], ascending=[False, False]
-    )
-    if eligible.empty:
+    eligible = context.loc[
+        context["attempts"].ge(min_context_n)
+        & context["imd_band"].ne("Không xác định")
+    ].sort_values(["fail_rate", "attempts"], ascending=[False, False])
+    if len(eligible) < 2:
         context_message = insufficient
     else:
-        top = eligible.iloc[0]
-        education = EDUCATION_LABELS.get(
-            str(top["highest_education"]), str(top["highest_education"])
+        maximum = eligible.iloc[0]
+        minimum = eligible.sort_values(
+            ["fail_rate", "attempts"], ascending=[True, False]
+        ).iloc[0]
+        max_education = EDUCATION_LABELS.get(
+            str(maximum["highest_education"]), str(maximum["highest_education"])
+        )
+        min_education = EDUCATION_LABELS.get(
+            str(minimum["highest_education"]), str(minimum["highest_education"])
         )
         context_message = (
-            f"Bối cảnh học vấn và IMD: trong các tổ hợp có ít nhất {min_cell_n:,} "
-            f"lượt học, nhóm {education} tại mức IMD {top['imd_band']} ghi nhận tỷ lệ "
-            f"Fail cao nhất là {float(top['fail_rate']):.1%} (N={int(top['attempts']):,}). "
-            "Các biến này chỉ nên dùng để nhận diện nhu cầu hỗ trợ ở cấp nhóm, không "
-            "làm căn cứ duy nhất để đánh giá một cá nhân."
+            f"Trong các tổ hợp có IMD xác định và tối thiểu {min_context_n:,} lượt học, nhóm "
+            f"{max_education} tại IMD {maximum['imd_band']} có tỷ lệ Fail cao nhất "
+            f"({float(maximum['fail_rate']):.1%}), chênh "
+            f"{abs(float(maximum['fail_rate']) - float(minimum['fail_rate'])) * 100:.1f} "
+            f"điểm phần trăm so với tổ hợp thấp nhất là {min_education} tại IMD "
+            f"{minimum['imd_band']} ({float(minimum['fail_rate']):.1%}). Kết quả này "
+            "dùng để nhận diện nhu cầu hỗ trợ theo nhóm, không phải để gán nhãn nguy cơ "
+            "cho cá nhân."
         )
 
     return [profile_message, previous_message, context_message]
@@ -1491,7 +1514,10 @@ def render_interaction_page() -> None:
     )
     render_term_guide(
         [
-            ("Kết hợp yếu tố", "xem hai đặc điểm cùng lúc thay vì tách riêng"),
+            (
+                "Kết hợp yếu tố",
+                "xem hai đặc điểm cùng lúc; heatmap mô tả mối liên hệ theo nhóm, không chứng minh nhân quả",
+            ),
             ("Nhóm 25%", "chia dữ liệu thành bốn nhóm có quy mô gần bằng nhau"),
             ("IMD", "nhóm mức khó khăn kinh tế–xã hội của khu vực cư trú"),
             ("N", "số lượt học trong nhóm đang hiển thị"),
@@ -1508,13 +1534,51 @@ def render_interaction_page() -> None:
         st.warning("Bộ lọc hiện tại không có lượt học trong snapshot ngày 105.")
         return
 
-    render_story(
-        "STORY · Nhận định khi kết hợp nhiều yếu tố",
-        build_interaction_story(frame, min_cell_n=30),
+    interaction_insights = build_interaction_story(
+        frame, min_cell_n=30, min_context_n=100
+    )
+    render_story_hook(
+        "STORY · Nhận diện tổ hợp tín hiệu",
+        "Ở trang trước, các tín hiệu được xem xét riêng lẻ. Tuy nhiên, trong thực tế, "
+        "nhiều tín hiệu có thể xuất hiện đồng thời. Việc kết hợp các yếu tố giúp xem tỷ "
+        "lệ Fail thay đổi ra sao khi một hoặc nhiều tín hiệu cùng bất lợi. Các phân tích "
+        "dưới đây nhằm nhận diện những tổ hợp cần được ưu tiên hỗ trợ, không nhằm gắn "
+        "nhãn năng lực cá nhân.",
     )
     render_engagement_assessment_heatmap(frame)
+    note(
+        interaction_insights[0],
+        how="Mỗi ô thể hiện tỷ lệ Fail và số lượt học của một tổ hợp hai nhóm.",
+        caveat=(
+            "Nhóm 25% được tính lại trong phạm vi bộ lọc hiện hành. Nhận xét chỉ xuất "
+            "hiện khi cả bốn ô so sánh có tối thiểu 30 lượt học; dữ liệu mô tả các tổ "
+            "hợp tín hiệu, không chứng minh nguyên nhân."
+        ),
+    )
     render_interaction_heatmap(frame)
+    note(
+        interaction_insights[2],
+        how="Màu đậm hơn biểu thị tỷ lệ Fail cao hơn; N trong ô là số lượt học.",
+        caveat=(
+            "Hệ thống chỉ xếp hạng các ô có tối thiểu 100 lượt học. IMD mô tả điều "
+            "kiện kinh tế–xã hội của khu vực cư trú, không phải thu nhập cá nhân; nhóm "
+            "IMD Không xác định vẫn hiển thị trên biểu đồ nhưng không tham gia xếp hạng."
+        ),
+    )
     render_attempt_boxplot(frame)
+    note(
+        interaction_insights[1],
+        how=(
+            "Boxplot cho thấy phân bố điểm assessment tại ngày 105 theo số lần từng học "
+            "học phần."
+        ),
+        caveat=(
+            "Nhóm 3+ gộp các lượt có từ 3 đến 6 lần học trước. Điểm chỉ dùng dữ liệu có "
+            "trước hoặc tại ngày 105; trung vị chỉ tính các lượt có điểm, còn tỷ lệ Fail "
+            "tính trên toàn bộ lượt học trong mỗi nhóm. Biểu đồ không xác định nguyên nhân "
+            "khiến một lượt học phải học lại."
+        ),
+    )
 
 
 def render_probability_validation(frame: pd.DataFrame) -> tuple[float, float]:
