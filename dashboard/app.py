@@ -1041,20 +1041,18 @@ def render_resource_type_ratio() -> None:
     
     try:
         val_forum = avg.loc[avg["activity_type"] == "forumng"]
-        pass_forum = val_forum["1"].iloc[0]
-        fail_forum = val_forum["0"].iloc[0]
-        diff_forum = (pass_forum - fail_forum) * 100
+        pass_forum = val_forum["0"].iloc[0]
+        fail_forum = val_forum["1"].iloc[0]
         
         val_subpage = avg.loc[avg["activity_type"] == "subpage"]
-        pass_subpage = val_subpage["1"].iloc[0]
-        fail_subpage = val_subpage["0"].iloc[0]
+        pass_subpage = val_subpage["0"].iloc[0]
+        fail_subpage = val_subpage["1"].iloc[0]
         
         note(
-            f"Nhóm Qua môn dành tỷ trọng cao hơn cho forum ({pass_forum:.1%} so với {fail_forum:.1%}, chênh {diff_forum:.1f} điểm %), "
-            f"còn nhóm Trượt nghiêng nhẹ về subpage ({fail_subpage:.1%} so với {pass_subpage:.1%}). "
-            "Nhìn chung, loại tài nguyên là yếu tố phụ, hai nhóm dùng tài nguyên khá giống nhau.",
+            f"Nhóm Qua môn tương tác với forum cực kỳ nhiều so với nhóm Trượt ({pass_forum:.1f} lượt/người so với {fail_forum:.1f} lượt/người, gấp {pass_forum/fail_forum:.1f} lần). "
+            f"Với tài nguyên subpage, mức độ cũng tương tự ({pass_subpage:.1f} lượt so với {fail_subpage:.1f} lượt).",
             how="Trục X thể hiện tỷ lệ mức dùng (nhóm Qua môn / nhóm Trượt). Chấm nằm bên phải vạch 1.0 nghĩa là nhóm Qua môn ưu tiên loại đó hơn.",
-            caveat="Tỷ trọng này chỉ so sánh cơ cấu phân bổ, không so sánh khối lượng tuyệt đối nên không cho biết nhóm nào click nhiều hơn về số lượng."
+            caveat="Nhóm Qua môn có mức độ tương tác cao gấp nhiều lần ở MỌI loại tài nguyên, do đó điểm mấu chốt là có tương tác hay không chứ không phải chọn loại nào."
         )
     except Exception:
         pass
