@@ -410,12 +410,14 @@ def render_academic_kpis(frame: pd.DataFrame) -> None:
 
 
 def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> None:
+    base_frame_copy = base_frame.copy()
+    base_frame_copy["Not_Complete"] = base_frame_copy["final_result"].isin(["Fail", "Withdrawn"]).astype(int)
     stats = (
-        base_frame.groupby("region", observed=True)
+        base_frame_copy.groupby("region", observed=True)
         .agg(
             attempts=("id_student", "size"),
-            at_risk_count=("At_Risk", "sum"),
-            at_risk_rate=("At_Risk", "mean"),
+            at_risk_count=("Not_Complete", "sum"),
+            at_risk_rate=("Not_Complete", "mean"),
         )
         .reset_index()
     )
@@ -435,19 +437,19 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
         color_continuous_scale=RISK_SCALE,
         range_color=(color_min, color_max),
         custom_data=["region", "attempts", "at_risk_count", "at_risk_rate"],
-        title="2 · Tỷ lệ trượt theo vùng cư trú",
+        title="2 · Tỷ lệ Không hoàn thành theo vùng cư trú",
     )
     figure.update_geos(fitbounds="locations", visible=False, bgcolor="#FFFFFF")
     figure.update_traces(
         marker_line_color="#FFFFFF",
         marker_line_width=1.0,
         hovertemplate=(
-            "Vùng=%{customdata[0]}<br>Tỷ lệ trượt=%{customdata[3]:.1%}"
-            "<br>Lượt học=%{customdata[1]:,}<br>Số lượt trượt=%{customdata[2]:,}<extra></extra>"
+            "Vùng=%{customdata[0]}<br>Tỷ lệ KHT=%{customdata[3]:.1%}"
+            "<br>Lượt học=%{customdata[1]:,}<br>Số lượt KHT=%{customdata[2]:,}<extra></extra>"
         ),
     )
     figure.update_layout(
-        coloraxis_colorbar={"title": "Tỷ lệ trượt", "tickformat": ".0%"}
+        coloraxis_colorbar={"title": "Tỷ lệ KHT", "tickformat": ".0%"}
     )
     polish_figure(figure, height=565, legend="none")
     event = st.plotly_chart(
@@ -466,12 +468,23 @@ def render_region_map(base_frame: pd.DataFrame, active_region: str | None) -> No
         if selected and str(selected) != active_region:
             st.session_state["academic_region"] = str(selected)
             st.rerun()
-    st.caption(
-        "Bấm một vùng để lọc KPI và các biểu đồ trên Trang 1. "
-        "Màu đậm hơn = tỷ lệ trượt cao hơn; tooltip cho biết tỷ lệ và cỡ mẫu N. "
-        "⚠️ **Lưu ý Ngụy biện sinh thái:** Bản đồ chỉ thể hiện số liệu trung bình, tuyệt đối không suy diễn thành xác suất trượt của cá nhân dựa trên vùng cư trú."
-    )
-
+    if not stats.empty:
+        valid_stats = stats[stats["attempts"] >= 100].sort_values("at_risk_rate")
+        if len(valid_stats) >= 2:
+            lo, hi = valid_stats.iloc[0], valid_stats.iloc[-1]
+            hi_region, lo_region = hi["region"], lo["region"]
+            ratio = hi["at_risk_rate"] / lo["at_risk_rate"]
+            st.info(
+                f"**Điểm đáng chú ý:** Phần lớn các vùng nằm quanh mức chung, nổi bật ở phía cao là {hi_region} "
+                f"({hi['at_risk_rate']:.1%}) và phía thấp là {lo_region} ({lo['at_risk_rate']:.1%}); "
+                f"chênh khoảng {ratio:.1f} lần và mức chênh lệch này vẫn còn sau khi hiệu chỉnh các biến nền (theo kết quả hồi quy)."
+            )
+            
+    st.caption("Cách đọc: Bấm một vùng để lọc KPI và các biểu đồ trên Trang 1. Màu đậm hơn = tỷ lệ Không hoàn thành cao hơn; tooltip cho biết tỷ lệ và cỡ mẫu N.")
+    with st.expander("Lưu ý khi đọc"):
+        st.markdown(
+            "⚠️ **Ngụy biện sinh thái:** Bản đồ chỉ thể hiện số liệu trung bình, tuyệt đối không suy diễn thành xác suất rủi ro của cá nhân dựa trên vùng cư trú."
+        )
 
 def outcome_percentages(frame: pd.DataFrame, group_column: str) -> pd.DataFrame:
     counts = (
@@ -559,9 +572,23 @@ def render_outcome_overview(frame: pd.DataFrame) -> None:
     figure.update_yaxes(categoryorder="array", categoryarray=group_order)
     polish_figure(figure, height=height)
     st.plotly_chart(figure, width="stretch")
+    
+    n_total = len(chart_frame)
+    if n_total > 0:
+        counts = chart_frame["final_result"].value_counts(normalize=True)
+        fail = counts.get("Fail", 0)
+        withdrawn = counts.get("Withdrawn", 0)
+        distinction = counts.get("Distinction", 0)
+        pass_rate = counts.get("Pass", 0)
+        success = distinction + pass_rate
+        st.info(
+            f"**Điểm đáng chú ý:** Rút học ({withdrawn:.1%}) lớn hơn cả trượt ({fail:.1%}), và chỉ khoảng "
+            f"{success:.0%} lượt học kết thúc bằng Qua môn hoặc Xuất sắc. Nhóm Xuất sắc chiếm khoảng {distinction:.0%}. "
+            f"Tức thanh biểu đồ này cho thấy vấn đề chính là bỏ giữa chừng, không chỉ là học yếu."
+        )
+
     st.caption(
-        "Mỗi thanh bằng 100%; tỷ lệ và N được ghi trực tiếp. "
-        "Nút phân tích sâu chuyển từ tổng thể sang một yếu tố có ý nghĩa diễn giải."
+        "Cách đọc: Mỗi thanh bằng 100%; tỷ lệ và N được ghi trực tiếp. Nút phân tích sâu chuyển từ tổng thể sang một yếu tố có ý nghĩa diễn giải."
     )
 
 
@@ -639,7 +666,22 @@ def render_vle_timeline(
     figure.add_vline(x=0, line_dash="dash", line_color="gray", annotation_text="Bắt đầu khóa học")
     polish_figure(figure, height=450)
     st.plotly_chart(figure, width="stretch")
-    st.caption("Nhóm Qua môn tương tác nhiều hơn gấp 2.5 lần ngay từ trước khi khóa học bắt đầu. Đã lọc nhóm Rút học sớm để đảm bảo so sánh công bằng.")
+    
+    try:
+        val_pass_minus21 = daily.loc[(daily["Nhóm"] == "Qua môn / Xuất sắc") & (daily["date"] == -21), "avg_click_7d"].iloc[0]
+        val_fail_minus21 = daily.loc[(daily["Nhóm"] == "Trượt") & (daily["date"] == -21), "avg_click_7d"].iloc[0]
+        val_pass_100 = daily.loc[(daily["Nhóm"] == "Qua môn / Xuất sắc") & (daily["date"] == 100), "avg_click_7d"].iloc[0]
+        val_fail_100 = daily.loc[(daily["Nhóm"] == "Trượt") & (daily["date"] == 100), "avg_click_7d"].iloc[0]
+        note(
+            f"Cả hai nhóm đều tăng mạnh quanh các hạn nộp (đỉnh gần ngày 19), nên hạn nộp kéo tương tác lên ở cả hai phía; điều phân biệt là mức nền. "
+            f"Ngay ngày −21, nhóm Trượt chỉ có {val_fail_minus21:.2f} lượt/ngày so với {val_pass_minus21:.2f} ở nhóm Qua môn, và về cuối kỳ khoảng cách mở rộng ra "
+            f"({val_fail_100:.1f} lượt so với {val_pass_100:.1f} ở ngày 100). Sự khác biệt xuất hiện từ trước khi môn học bắt đầu gợi ý đây là đặc điểm có sẵn của người học, không phải hệ quả của việc học dở.",
+            how="đường là trung bình trượt 7 ngày. Khoảng cách hai đường cho thấy sự chênh lệch mức độ tương tác.",
+            caveat="Legend chỉ có hai nhóm (Không bao gồm sinh viên Rút học). Do người rút học đã bị loại khỏi mẫu, đường không bị tụt giả tạo vì người ngừng học."
+        )
+    except Exception:
+        pass
+        
     return 0.0, 0.0
 
 def comparison_message(
@@ -673,6 +715,14 @@ def comparison_message(
         f"({high['mean']:.1%}, N={int(high['size']):,}) và thấp nhất ở "
         f"{low_display} ({low['mean']:.1%}, N={int(low['size']):,})."
     )
+
+def note(headline: str, how: str | None = None, caveat: str | None = None) -> None:
+    st.info(f"**Điểm đáng chú ý:** {headline}")
+    if how:
+        st.caption(f"Cách đọc: {how}")
+    if caveat:
+        with st.expander("Lưu ý khi đọc"):
+            st.markdown(caveat)
 
 
 
@@ -719,11 +769,29 @@ def render_score_distribution(frame: pd.DataFrame) -> None:
     figure.update_yaxes(range=[0, 100], dtick=20)
     polish_figure(figure, height=470)
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        f"Có {len(data):,}/{len(frame):,} lượt học có ít nhất một assessment được chấm. "
-        "Các lượt không có điểm vẫn được giữ trong cơ cấu kết quả phía trên, "
-        "nhưng không thể hiện trong biểu đồ phân bố điểm."
+    
+    n_total = len(frame)
+    n_scored = len(data)
+    no_score = 1 - (n_scored / n_total) if n_total > 0 else 0
+    st.info(
+        f"**Điểm đáng chú ý:** Có {no_score:.0%} lượt học trong phạm vi lọc chưa có điểm nào và không hiện ở biểu đồ này "
+        f"(xem chi tiết ở bảng bên dưới). Điểm số phân tách rõ nhóm Xuất sắc khỏi các nhóm còn lại, nhưng phân phối của Trượt và Rút học chồng lấn mạnh lên vùng điểm của Qua môn, "
+        "nên điểm trung bình một mình khó dùng để nhận ra sớm người sắp rớt."
     )
+    
+    st.caption(
+        "Cách đọc: Bề rộng cho thấy nơi dữ liệu tập trung; hộp bên trong là trung vị và khoảng 25%–75%."
+    )
+    
+    with st.expander("Tỷ lệ sinh viên không có điểm đánh giá theo kết quả cuối kỳ"):
+        missing_stats = frame.assign(has_score=frame[score_column].notna()).groupby("final_result", observed=True).agg(
+            total=("id_student", "size"),
+            missing=("has_score", lambda x: (~x).sum())
+        )
+        missing_stats["Tỷ lệ thiếu điểm"] = missing_stats["missing"] / missing_stats["total"]
+        missing_stats = missing_stats.rename(columns={"total": "Tổng lượt học", "missing": "Số lượt thiếu điểm"})
+        missing_stats.index.name = "Kết quả cuối"
+        st.dataframe(missing_stats.style.format({"Tỷ lệ thiếu điểm": "{:.1%}", "Tổng lượt học": "{:,}", "Số lượt thiếu điểm": "{:,}"}))
 
 
 def render_overview_page() -> None:
@@ -868,10 +936,19 @@ def render_completion_chart(frame: pd.DataFrame) -> tuple[float, float]:
     figure.update_yaxes(tickformat=".0%", range=[0, 1.15])
     polish_figure(figure, height=470, legend="none")
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "Chỉ tính những bài tập/kiểm tra đã đến hạn trước hoặc tại ngày 105. "
-        "Mức hoàn thành càng cao, rủi ro càng thấp."
-    )
+    
+    r = grouped.dropna().reset_index(drop=True)
+    if not r.empty and len(r) >= 2:
+        drop = (r["at_risk_rate"] - r["at_risk_rate"].shift(-1)).fillna(-1).values
+        i = int(np.argmax(drop))
+        note(
+            f"Tỷ lệ Trượt giảm từ {r['at_risk_rate'].iloc[0]:.1%} xuống {r['at_risk_rate'].iloc[-1]:.1%}; "
+            f"bước giảm lớn nhất ({drop[i]*100:.0f} điểm %) là từ '{r['completion_band'].iloc[i]}' sang '{r['completion_band'].iloc[i+1]}'. "
+            "Nghĩa là hoàn thành đủ bài quan trọng hơn hoàn thành một phần; sinh viên còn thiếu bài là nhóm đáng nhắc nhở nhất vì còn kéo lại được.",
+            how="mỗi cột là tỷ lệ Trượt của nhóm sinh viên theo mức hoàn thành bài đã đến hạn. Các số (N=...) thể hiện số sinh viên trong nhóm đó.",
+            caveat="Chỉ tính những bài tập/kiểm tra đã đến hạn trước hoặc tại ngày 105. Định nghĩa Trượt ở đây là Academic_Fail (không bao gồm Rút học)."
+        )
+    
     return 0.0, 0.0
 
 
@@ -904,7 +981,18 @@ def render_auc_ranking() -> None:
     fig.update_xaxes(range=[0.4, 1.0])
     polish_figure(fig, height=350, legend="none")
     st.plotly_chart(fig, width="stretch")
-    st.caption("AUC càng gần 1 thì yếu tố càng phân biệt tốt nhóm hoàn thành và Không hoàn thành. Các yếu tố hành vi cho tín hiệu mạnh nhất.")
+    
+    try:
+        avg_score_auc = rank.loc[rank["yeu_to"] == "Điểm trung bình các bài đã chấm", "AUC"].iloc[0]
+        recent_click_auc = rank.loc[rank["yeu_to"] == "Tương tác trong 14 ngày gần nhất", "AUC"].iloc[0]
+        note(
+            f"Đến ngày 105, hành vi và kết quả học tập dự đoán tốt hơn hẳn hồ sơ nền. Điểm trung bình (AUC {avg_score_auc:.2f}) và tương tác gần đây (AUC {recent_click_auc:.2f}) đứng đầu. "
+            "Đáng chú ý: tương tác gần đây gần ngang điểm số, nên cần theo dõi xu hướng mới nhất, không chỉ xem tổng. Dù vậy, không có yếu tố đơn lẻ nào đủ mạnh, do đó cần kết hợp nhiều tín hiệu bằng Mô hình ở Trang 4.",
+            how="Thanh càng dài (AUC càng gần 1) thì yếu tố càng phân biệt tốt nhóm Qua môn và nhóm Trượt.",
+            caveat="Phân tích này không khẳng định nhân quả, chỉ đánh giá mức độ tương quan để phục vụ cảnh báo sớm."
+        )
+    except Exception:
+        pass
 
 def render_delay_score_box() -> None:
     try:
@@ -920,7 +1008,19 @@ def render_delay_score_box() -> None:
     fig.update_traces(texttemplate="N=%{text:,}", textposition="outside")
     polish_figure(fig, height=400, legend="none")
     st.plotly_chart(fig, width="stretch")
-    st.caption(f"Đã chuẩn hóa độ khó từng bài. Hệ số tương quan Spearman = {sp:.2f}. Nộp trễ quá 7 ngày làm điểm giảm sâu, trong khi nộp sớm không chắc điểm đã cao hơn đúng hạn.")
+    
+    try:
+        val_ontime = tab.loc[tab["delay_bucket"] == "Đúng hạn", "median"].iloc[0]
+        val_late7 = tab.loc[tab["delay_bucket"] == "Trễ > 7 ngày", "median"].iloc[0]
+        diff = val_ontime - val_late7
+        note(
+            f"Nộp trễ trên 7 ngày có điểm thấp hơn {diff:.1f} điểm so với nộp đúng hạn (sau khi chuẩn hóa theo bài). "
+            f"Quan hệ giữa nộp trễ và điểm có nhưng yếu (tương quan Spearman = {sp:.2f}); hành vi có nộp bài hay không (biểu đồ 6) quan trọng hơn nộp sớm hay trễ.",
+            how="Cột thể hiện trung vị chênh lệch điểm thực tế so với trung bình môn.",
+            caveat="Mối liên hệ không khẳng định nhân quả. Trễ bài có thể chỉ là hệ quả của việc sinh viên đang gặp khó khăn khác."
+        )
+    except Exception:
+        pass
 
 def render_resource_type_ratio() -> None:
     try:
@@ -938,7 +1038,26 @@ def render_resource_type_ratio() -> None:
     fig.update_xaxes(type="log", tickformat=".1f")
     polish_figure(fig, height=400, legend="none")
     st.plotly_chart(fig, width="stretch")
-    st.caption("Các tài nguyên như forumng, quiz có tỷ lệ sử dụng chênh lệch lớn nhất giữa hai nhóm, gợi ý hành động cụ thể để tăng tương tác.")
+    
+    try:
+        val_forum = avg.loc[avg["activity_type"] == "forumng"]
+        pass_forum = val_forum["1"].iloc[0]
+        fail_forum = val_forum["0"].iloc[0]
+        diff_forum = (pass_forum - fail_forum) * 100
+        
+        val_subpage = avg.loc[avg["activity_type"] == "subpage"]
+        pass_subpage = val_subpage["1"].iloc[0]
+        fail_subpage = val_subpage["0"].iloc[0]
+        
+        note(
+            f"Nhóm Qua môn dành tỷ trọng cao hơn cho forum ({pass_forum:.1%} so với {fail_forum:.1%}, chênh {diff_forum:.1f} điểm %), "
+            f"còn nhóm Trượt nghiêng nhẹ về subpage ({fail_subpage:.1%} so với {pass_subpage:.1%}). "
+            "Nhìn chung, loại tài nguyên là yếu tố phụ, hai nhóm dùng tài nguyên khá giống nhau.",
+            how="Trục X thể hiện tỷ lệ mức dùng (nhóm Qua môn / nhóm Trượt). Chấm nằm bên phải vạch 1.0 nghĩa là nhóm Qua môn ưu tiên loại đó hơn.",
+            caveat="Tỷ trọng này chỉ so sánh cơ cấu phân bổ, không so sánh khối lượng tuyệt đối nên không cho biết nhóm nào click nhiều hơn về số lượng."
+        )
+    except Exception:
+        pass
 def render_behavior_page() -> None:
     render_header(
         "Trang 2 · Các yếu tố học tập",
@@ -978,15 +1097,18 @@ def render_behavior_page() -> None:
 
     try:
         rule = dashboard_mart("rule_metrics.csv", ("share", "precision", "recall")).iloc[0]
-        story_text = f"Chỉ {rule['share']:.1%} lượt học thuộc nhóm chưa hoàn thành bài và ít tham gia, nhưng lại chứa tới {rule['recall']:.1%} số ca không hoàn thành, với độ chính xác {rule['precision']:.1%}."
+        story_text = f"Quy tắc cảnh báo nhanh: Nhóm chưa nộp bài nào và thuộc 25% ít tương tác nhất chỉ chiếm {rule['share']:.1%} lượt học, nhưng chứa tới {rule['recall']:.1%} tổng số ca Trượt. Quy tắc này tuy chính xác nhưng bỏ sót phần lớn rủi ro, do đó cần mô hình Machine Learning ở Trang 4 để bắt được nhiều hơn."
     except Exception:
         story_text = "Nên ưu tiên hỗ trợ sinh viên vừa chưa hoàn thành bài đến hạn vừa ít tham gia."
 
     render_story(
-        "STORY · Hai yếu tố liên quan rõ nhất",
+        "STORY · Hành vi học tập",
         [
-            "Việc hoàn thành bài và mức độ tương tác là những tín hiệu cảnh báo mạnh nhất.",
+            "Nền tảng tương tác của hai nhóm đã khác nhau từ trước khi môn học bắt đầu (Biểu đồ 5).",
+            "Việc hoàn thành đủ bài là ngưỡng quyết định nhất đối với nguy cơ trượt (Biểu đồ 6).",
+            "Nộp bài sớm hay trễ, cũng như dùng loại tài nguyên nào chỉ là yếu tố phụ (Biểu đồ 7 & 8).",
             story_text,
+            "Vì thế, hàm ý can thiệp là nên tập trung đôn đốc sinh viên nộp đủ bài, theo dõi xu hướng tương tác gần đây, và sử dụng Mô hình thay vì quy tắc tĩnh."
         ],
     )
 
