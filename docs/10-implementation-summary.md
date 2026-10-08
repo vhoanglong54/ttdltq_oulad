@@ -101,11 +101,15 @@ Giải thích đầy đủ và cách đối chiếu: [`04-model.md`](04-model.md
 ### Trang 4 — Mô hình và yếu tố dự báo
 
 - Định nghĩa rõ model dự báo Fail, không dự báo điểm.
-- KPI động từ dữ liệu đang lọc; caption metric chuẩn từ test artifact.
-- Bar + line đối chiếu xác suất dự báo với tỷ lệ `Fail` thật theo 10 nhóm.
-- Confusion matrix heatmap cho TP/TN/FP/FN.
+- Giải thích rõ ba nhóm đầu vào model: nền tảng, tiến độ assessment và hoạt động VLE đến ngày 105.
+- Một ô mở đầu ngắn trình bày dự báo Fail tại ngày 105, cách đọc ngưỡng và chuỗi thao tác; không liệt kê công thức dài.
+- Sigmoid + probability strip thể hiện đường xác suất, threshold 33,5% và từng quan sát theo lớp thật.
+- Thanh trượt threshold cập nhật Recall, Precision, F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm; có nút reset về ngưỡng chuẩn.
+- Confusion matrix heatmap cập nhật theo ngưỡng đang thử; ngưỡng chuẩn 0,335 vẫn được đánh dấu.
+- Khối quyết định diễn giải đánh đổi bỏ sót/cảnh báo nhầm tại ngưỡng đang thử.
+- KPI chuẩn và ROC/PR được chuyển xuống cuối trang để kiểm định tổng thể sau phần quyết định.
 - Bar hệ số giải thích tín hiệu toàn mô hình.
-- Story đối chiếu profile High/Low và kết luận tín hiệu liên quan đến Fail.
+- Các hệ số toàn cục giúp kết luận tín hiệu liên quan đến Fail.
 - Không hiển thị danh sách, mã sinh viên, học phần hoặc lớp học; dự báo chỉ được diễn giải ở cấp nhóm.
 
 Tất cả thuật ngữ VLE, IMD, module ẩn danh, checkpoint, Recall và bỏ sót đều có giải thích tiếng Việt trong giao diện.
@@ -122,7 +126,7 @@ Tất cả thuật ngữ VLE, IMD, module ẩn danh, checkpoint, Recall và bỏ
 ## 7. Kiểm thử đã chạy
 
 - `python -m compileall dashboard src tests`: PASS.
-- `python -m unittest discover -s tests -v`: **19/19 PASS**, gồm kiểm tra mart và hợp đồng “mỗi visual phải trả lời một câu hỏi kết quả”.
+- `python -m unittest discover -s tests -v`: **20/20 PASS**, gồm kiểm tra mart, chuỗi trực quan Logistic và hợp đồng “mỗi visual phải trả lời một câu hỏi kết quả”.
 - `streamlit.testing.v1.AppTest`: 4/4 trang không exception sau sửa model/dashboard.
 - Validation model: 11/11 PASS.
 

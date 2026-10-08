@@ -61,11 +61,16 @@ Mục tiêu: không nhìn từng yếu tố rời rạc.
 Mục tiêu: trả lời rõ “dự báo cái gì, đúng đến đâu và yếu tố nào liên quan đến nguy cơ Fail”. Không lập danh sách sinh viên hoặc lớp học.
 
 - Filter: giới tính, tuổi, học vấn đầu vào và IMD.
-- KPI: Accuracy, Recall Fail và Precision Fail.
-- Bar + line theo nhóm xác suất: so sánh xác suất model với tỷ lệ `Fail` thực tế từ nhóm thấp nhất đến cao nhất.
-- Confusion matrix heatmap: số và tỷ lệ dự báo đúng, cảnh báo nhầm, bỏ sót.
+- Một khối mở đầu ngắn: model dự báo Fail tại ngày 105, cách đọc ngưỡng 33,5% và chuỗi thao tác từ chọn dữ liệu đến quyết định; không liệt kê công thức hoặc danh sách biến dài.
+- Sigmoid + probability strip: đường chữ S, threshold 33,5% và xác suất từng lượt học theo lớp thực tế.
+- Threshold trade-off tương tác: kéo ngưỡng và cập nhật Recall, Precision, F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm; có nút trở về ngưỡng chuẩn.
+- Confusion matrix heatmap: số và tỷ lệ dự báo đúng, cảnh báo nhầm, bỏ sót tại ngưỡng đang thử.
+- ROC + Precision–Recall: kiểm tra khả năng phân biệt hai lớp trên toàn bộ ngưỡng; đánh dấu vị trí gần ngưỡng đang chọn.
 - Bar hệ số: những tín hiệu global đi cùng nguy cơ cao/thấp.
-- Story: model dự báo Fail chứ không dự báo điểm; nêu Accuracy/Recall, số bỏ sót, profile High so với Low và kết luận về các tín hiệu liên quan.
+- Khối quyết định: phát hiện đúng, bỏ sót, cảnh báo nhầm và đánh đổi so với ngưỡng chuẩn.
+- Kiểm định cuối trang: KPI Accuracy/Recall/Precision/F1 trên toàn bộ test và ROC/PR tại ngưỡng chuẩn.
+- Năm biểu đồ kiểm định hiển thị trực tiếp trên trang, không ẩn trong khối xổ xuống.
+- Story: dự báo gì → chọn dữ liệu → xem xác suất → thử threshold → kiểm tra lỗi → ra quyết định → kiểm định tổng thể.
 - Quyền riêng tư và trọng tâm: không hiển thị mã sinh viên, học phần, đợt mở lớp hoặc dự báo cá nhân.
 
 ## Nguồn dữ liệu giao diện
@@ -83,5 +88,6 @@ Mục tiêu: trả lời rõ “dự báo cái gì, đúng đến đâu và yế
 - Mapping map khớp đủ region; cross-filter không nhân KPI.
 - Bộ lọc rỗng có thông báo, không crash.
 - Metric Trang 4 khớp artifact test; threshold không ghi cứng.
+- Thay đổi threshold phải cập nhật Precision/Recall/F1, tỷ lệ cảnh báo và confusion matrix; nút reset phải đưa về ngưỡng chuẩn từ artifact.
 - Inventory phải ghi rõ câu hỏi và insight của từng visual; không có chart mang tính liệt kê.
 - Không còn nội dung Power BI/Tableau hoặc nhãn Fail+Withdrawn cũ ngoài rubric được bảo vệ.

@@ -17,6 +17,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from plotly.subplots import make_subplots
 
 from dashboard_data import (
     REGION_GEOJSON_PATH,
@@ -363,8 +364,9 @@ def context_filters(
     frame: pd.DataFrame,
     *,
     key_prefix: str,
+    heading: str = "Bộ lọc theo đặc điểm người học",
 ) -> tuple[list[str], list[str], list[str], list[str]]:
-    st.subheader("Bộ lọc theo đặc điểm người học")
+    st.subheader(heading)
     columns = st.columns(4)
     genders = columns[0].multiselect(
         "Giới tính · gender",
@@ -1245,7 +1247,7 @@ def render_engagement_assessment_heatmap(
         )
     )
     figure.update_layout(
-        title="8 · Khi mức tham gia trực tuyến và điểm bài tập cùng thấp",
+        title="9 · Khi mức tham gia trực tuyến và điểm bài tập cùng thấp",
         xaxis_title="Nhóm điểm bài tập đến ngày 105",
         yaxis_title="Nhóm mức tham gia học trực tuyến đến ngày 105",
     )
@@ -1258,7 +1260,7 @@ def render_engagement_assessment_heatmap(
     return low_rate, low_n, high_rate, high_n
 
 
-def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, float]:
+def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, float, float]:
     accuracy = frame["actual_at_risk"].eq(frame["predicted_at_risk"]).mean()
     actual_positive = frame["actual_at_risk"].eq(1)
     recall = (
@@ -1272,11 +1274,33 @@ def render_model_kpis(frame: pd.DataFrame) -> tuple[float, float, float]:
         if predicted_positive.any()
         else float("nan")
     )
-    cards = st.columns(3)
-    cards[0].metric("Tỷ lệ dự đoán đúng", format_percent(accuracy))
-    cards[1].metric("Tỷ lệ phát hiện lượt trượt", format_percent(recall))
-    cards[2].metric("Tỷ lệ cảnh báo trượt chính xác", format_percent(precision))
-    return float(accuracy), float(recall), float(precision)
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if pd.notna(precision) and pd.notna(recall) and precision + recall
+        else float("nan")
+    )
+    cards = st.columns(4)
+    cards[0].metric(
+        "Accuracy",
+        format_percent(accuracy),
+        help="Tỷ lệ dự báo đúng trên toàn bộ lượt học trong tập test.",
+    )
+    cards[1].metric(
+        "Recall Fail",
+        format_percent(recall),
+        help="Trong các lượt thực sự Fail, tỷ lệ được model phát hiện.",
+    )
+    cards[2].metric(
+        "Precision Fail",
+        format_percent(precision),
+        help="Trong các cảnh báo Fail, tỷ lệ thực sự kết thúc bằng Fail.",
+    )
+    cards[3].metric(
+        "F1 Fail",
+        format_percent(f1),
+        help="Trung bình điều hòa giữa Precision Fail và Recall Fail.",
+    )
+    return float(accuracy), float(recall), float(precision), float(f1)
 
 
 def render_interaction_heatmap(
@@ -1346,7 +1370,7 @@ def render_interaction_heatmap(
         )
     )
     figure.update_layout(
-        title="9 · Trình độ đầu vào và mức khó khăn kinh tế của khu vực",
+        title="10 · Trình độ đầu vào và mức khó khăn kinh tế của khu vực",
         xaxis_title="Nhóm mức khó khăn kinh tế–xã hội của khu vực",
         yaxis_title="Học vấn trước đó",
     )
@@ -1392,7 +1416,7 @@ def render_attempt_boxplot(frame: pd.DataFrame) -> tuple[float, float]:
             "previous_attempt_group": "Số lần từng học học phần này",
             "assessment_weighted_score_cutoff": "Điểm bài tập có trọng số đến ngày 105",
         },
-        title="10 · Điểm bài tập theo số lần từng học lại học phần",
+        title="11 · Điểm bài tập theo số lần từng học lại học phần",
     )
     figure.update_traces(
         hovertemplate="Nhóm=%{x}<br>Điểm=%{y:.1f}<extra></extra>"
@@ -1581,74 +1605,283 @@ def render_interaction_page() -> None:
     )
 
 
-def render_probability_validation(frame: pd.DataFrame) -> tuple[float, float]:
-    data = frame.copy()
-    bin_count = min(10, max(2, data["risk_probability"].nunique()))
-    labels = [f"Nhóm {value}" for value in range(1, bin_count + 1)]
-    data["probability_group"] = pd.qcut(
-        data["risk_probability"].rank(method="first"),
-        q=bin_count,
-        labels=labels,
+def render_model_summary() -> None:
+    """Present the prediction target and the dashboard reading flow."""
+
+    st.markdown(
+        """
+        <div class="definition-box">
+        <b>Logistic Regression dự báo gì?</b><br>
+        Tại ngày học thứ 105, model ước lượng <b>xác suất một lượt học kết thúc bằng Fail</b>.
+        Xác suất từ <b>33,5%</b> trở lên được xếp vào nhóm cảnh báo; kết quả dùng để
+        ưu tiên rà soát sớm, không phải dự báo điểm số.<br><br>
+        <b>Cách đọc trang này:</b>
+        Chọn nhóm dữ liệu → xem xác suất → thử ngưỡng → kiểm tra lỗi → ra quyết định.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    grouped = (
-        data.groupby("probability_group", observed=True)
-        .agg(
-            predicted_probability=("risk_probability", "mean"),
-            actual_fail_rate=("actual_at_risk", "mean"),
-            attempts=("actual_at_risk", "size"),
-        )
-        .reset_index()
-    )
-    figure = go.Figure()
-    figure.add_trace(
-        go.Bar(
-            x=grouped["probability_group"],
-            y=grouped["actual_fail_rate"],
-            name="Tỷ lệ trượt thực tế",
-            marker_color="#DC2626",
-            customdata=grouped[["attempts"]],
-            text=grouped["actual_fail_rate"],
-            texttemplate="%{text:.0%}",
-            textposition="outside",
-            hovertemplate=(
-                "%{x}<br>Trượt thực tế=%{y:.1%}<br>N=%{customdata[0]:,}<extra></extra>"
-            ),
-        )
+
+
+def render_sigmoid_probability_view(frame: pd.DataFrame) -> None:
+    """Show the Logistic link and each test observation's predicted probability."""
+
+    probability = frame["risk_probability"].astype(float).clip(1e-6, 1 - 1e-6)
+    actual = frame["actual_fail"].astype(int)
+    threshold = float(frame["prediction_threshold"].dropna().iloc[0])
+    threshold_z = float(np.log(threshold / (1 - threshold)))
+
+    observed_z = np.log(probability / (1 - probability))
+    z_min = min(-6.0, float(observed_z.quantile(0.005)))
+    z_max = max(6.0, float(observed_z.quantile(0.995)))
+    z_grid = np.linspace(z_min, z_max, 500)
+    sigmoid = 1 / (1 + np.exp(-z_grid))
+
+    figure = make_subplots(
+        rows=1,
+        cols=2,
+        column_widths=[0.42, 0.58],
+        horizontal_spacing=0.14,
+        subplot_titles=(
+            "z được đổi thành xác suất bằng Sigmoid",
+            "Xác suất của từng lượt học trong tập test",
+        ),
     )
     figure.add_trace(
         go.Scatter(
-            x=grouped["probability_group"],
-            y=grouped["predicted_probability"],
-            name="Xác suất model dự báo",
-            mode="lines+markers",
-            line={"color": "#2563EB", "width": 3},
-            marker={"size": 9},
-            hovertemplate="%{x}<br>Xác suất dự báo=%{y:.1%}<extra></extra>",
+            x=z_grid,
+            y=sigmoid,
+            mode="lines",
+            name="Sigmoid",
+            line={"color": "#2563EB", "width": 4},
+            hovertemplate="z=%{x:.2f}<br>p(Fail)=%{y:.1%}<extra></extra>",
+        ),
+        row=1,
+        col=1,
+    )
+    figure.add_hline(
+        y=threshold,
+        line_color="#F97316",
+        line_dash="dash",
+        annotation_text=f"Threshold {threshold:.1%}",
+        annotation_position="top left",
+        row=1,
+        col=1,
+    )
+    figure.add_vline(
+        x=threshold_z,
+        line_color="#F97316",
+        line_dash="dash",
+        row=1,
+        col=1,
+    )
+
+    point_order = np.arange(len(frame), dtype=float)
+    jitter = ((point_order * 0.61803398875) % 1 - 0.5) * 0.44
+    labels = {0: "Thực tế Pass/Distinction", 1: "Thực tế Fail"}
+    colors = {0: "#2563EB", 1: "#DC2626"}
+    for class_value in (0, 1):
+        mask = actual.eq(class_value).to_numpy()
+        figure.add_trace(
+            go.Scattergl(
+                x=probability.to_numpy()[mask],
+                y=class_value + jitter[mask],
+                mode="markers",
+                name=labels[class_value],
+                marker={
+                    "color": colors[class_value],
+                    "size": 6,
+                    "opacity": 0.42,
+                },
+                customdata=np.full(int(mask.sum()), labels[class_value]),
+                hovertemplate=(
+                    "%{customdata}<br>p(Fail)=%{x:.1%}<extra></extra>"
+                ),
+            ),
+            row=1,
+            col=2,
         )
+    figure.add_vline(
+        x=threshold,
+        line_color="#F97316",
+        line_width=3,
+        annotation_text=f"Ngưỡng {threshold:.1%}",
+        annotation_position="top right",
+        row=1,
+        col=2,
     )
+    figure.update_xaxes(title_text="Điểm tuyến tính z", row=1, col=1)
+    figure.update_yaxes(
+        title_text="p(Fail)", tickformat=".0%", range=[0, 1], row=1, col=1
+    )
+    figure.update_xaxes(
+        title_text="Xác suất model dự báo", tickformat=".0%", range=[0, 1], row=1, col=2
+    )
+    figure.update_yaxes(
+        title_text="Kết quả thực tế",
+        tickvals=[0, 1],
+        ticktext=["Pass/Distinction", "Fail"],
+        range=[-0.5, 1.5],
+        row=1,
+        col=2,
+    )
+    st.markdown("#### 12 · Từ điểm z đến xác suất và lớp dự báo")
+    polish_figure(figure, height=560)
     figure.update_layout(
-        title="11 · Nguy cơ dự báo cao hơn có đi cùng tỷ lệ trượt thực tế cao hơn?",
-        xaxis_title="Từ 10% xác suất thấp nhất đến 10% cao nhất",
-        yaxis_title="Tỷ lệ / xác suất trượt",
-        barmode="overlay",
+        margin={"l": 75, "r": 35, "t": 65, "b": 85},
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.16,
+            "xanchor": "center",
+            "x": 0.5,
+            "title_text": "",
+        },
     )
-    figure.update_yaxes(tickformat=".0%", range=[0, 1.08])
-    polish_figure(figure, height=500)
     st.plotly_chart(figure, width="stretch")
-    low_rate = float(grouped.iloc[0]["actual_fail_rate"])
-    high_rate = float(grouped.iloc[-1]["actual_fail_rate"])
+
+
+def render_threshold_explorer(frame: pd.DataFrame) -> float:
+    """Let the user inspect the operational trade-off of a logistic threshold."""
+
+    actual = frame["actual_fail"].astype(int).to_numpy()
+    probability = frame["risk_probability"].astype(float).to_numpy()
+    artifact_threshold = float(frame["prediction_threshold"].dropna().iloc[0])
+    slider_key = "model_threshold_percent"
+    if slider_key not in st.session_state:
+        st.session_state[slider_key] = round(artifact_threshold * 100, 1)
+    reset_column, _ = st.columns([1.3, 4.7])
+    if reset_column.button(
+        "Trở về ngưỡng chuẩn",
+        key="reset_model_threshold",
+        width="stretch",
+    ):
+        st.session_state[slider_key] = round(artifact_threshold * 100, 1)
+    selected_percent = st.slider(
+        "Ngưỡng xác suất để phát cảnh báo Fail",
+        min_value=5.0,
+        max_value=80.0,
+        step=0.5,
+        format="%.1f%%",
+        key=slider_key,
+        help=(
+            "Nếu xác suất dự báo lớn hơn hoặc bằng ngưỡng, lượt học được xếp vào "
+            "nhóm cảnh báo. Ngưỡng thấp bắt được nhiều Fail hơn nhưng cảnh báo nhầm nhiều hơn."
+        ),
+    )
+    selected_threshold = float(selected_percent) / 100
+
+    rows: list[dict[str, float]] = []
+    for threshold in np.arange(0.05, 0.805, 0.005):
+        predicted = probability >= threshold
+        tp = int(np.sum((actual == 1) & predicted))
+        fp = int(np.sum((actual == 0) & predicted))
+        fn = int(np.sum((actual == 1) & ~predicted))
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        rows.append(
+            {
+                "threshold": float(threshold),
+                "Recall Fail": recall,
+                "Precision Fail": precision,
+                "F1 Fail": f1,
+            }
+        )
+    tradeoff = pd.DataFrame(rows)
+
+    predicted = probability >= selected_threshold
+    tp = int(np.sum((actual == 1) & predicted))
+    fp = int(np.sum((actual == 0) & predicted))
+    fn = int(np.sum((actual == 1) & ~predicted))
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    alert_rate = float(predicted.mean())
+
+    metrics = st.columns(5)
+    metrics[0].metric("Ngưỡng đang thử", f"{selected_threshold:.1%}")
+    metrics[1].metric("Recall Fail", f"{recall:.1%}", help="Tỷ lệ Fail thật được phát hiện.")
+    metrics[2].metric("Precision Fail", f"{precision:.1%}", help="Tỷ lệ cảnh báo thực sự là Fail.")
+    metrics[3].metric("F1 Fail", f"{f1:.1%}", help="Cân bằng Precision và Recall.")
+    metrics[4].metric(
+        "Tỷ lệ được cảnh báo",
+        f"{alert_rate:.1%}",
+        help="Tỷ lệ lượt học có p(Fail) lớn hơn hoặc bằng ngưỡng đang thử.",
+    )
+
+    figure = go.Figure()
+    for name, color, dash in [
+        ("Recall Fail", "#DC2626", "solid"),
+        ("Precision Fail", "#2563EB", "solid"),
+        ("F1 Fail", "#0F766E", "dash"),
+    ]:
+        figure.add_trace(
+            go.Scatter(
+                x=tradeoff["threshold"],
+                y=tradeoff[name],
+                name=name,
+                mode="lines",
+                line={"color": color, "width": 3, "dash": dash},
+                hovertemplate=f"Ngưỡng=%{{x:.1%}}<br>{name}=%{{y:.1%}}<extra></extra>",
+            )
+        )
+    if np.isclose(selected_threshold, artifact_threshold):
+        figure.add_vline(
+            x=artifact_threshold,
+            line_color="#0F766E",
+            line_width=3,
+            annotation_text=f"Ngưỡng chuẩn đang dùng {artifact_threshold:.1%}",
+            annotation_position="top right",
+        )
+    else:
+        figure.add_vline(
+            x=selected_threshold,
+            line_color="#F97316",
+            line_width=3,
+            annotation_text=f"Đang thử {selected_threshold:.1%}",
+            annotation_position="top right",
+        )
+        figure.add_vline(
+            x=artifact_threshold,
+            line_color="#0F766E",
+            line_dash="dash",
+            annotation_text=f"Ngưỡng chuẩn {artifact_threshold:.1%}",
+            annotation_position="bottom right",
+        )
+    figure.update_layout(
+        title="14 · Threshold làm Precision, Recall và F1 thay đổi như thế nào?",
+        xaxis_title="Ngưỡng xác suất phân loại Fail",
+        yaxis_title="Tỷ lệ",
+    )
+    figure.update_xaxes(tickformat=".0%")
+    figure.update_yaxes(tickformat=".0%", range=[0, 1.03])
+    polish_figure(figure, height=500, hovermode="x unified")
+    st.plotly_chart(figure, width="stretch")
     st.caption(
-        f"Nhóm xác suất thấp nhất có {low_rate:.1%} trượt thực tế; nhóm cao nhất là "
-        f"{high_rate:.1%}. Cột đỏ là kết quả thật, đường xanh là xác suất model dự báo."
+        f"Ngưỡng chuẩn {artifact_threshold:.1%}: Accuracy cao nhất trong các ngưỡng "
+        "vẫn đạt Recall Fail tối thiểu 75% trên validation."
     )
-    return low_rate, high_rate
+    return float(selected_threshold)
 
 
-def render_confusion_matrix(frame: pd.DataFrame) -> tuple[int, int, int, int]:
-    counts = frame["error_type"].value_counts()
-    tp, tn, fp, fn = (
-        int(counts.get(value, 0)) for value in ["TP", "TN", "FP", "FN"]
-    )
+def render_confusion_matrix(
+    frame: pd.DataFrame, threshold: float | None = None
+) -> tuple[int, int, int, int]:
+    if threshold is None:
+        counts = frame["error_type"].value_counts()
+        tp, tn, fp, fn = (
+            int(counts.get(value, 0)) for value in ["TP", "TN", "FP", "FN"]
+        )
+        title_suffix = ""
+    else:
+        actual = frame["actual_fail"].astype(int)
+        predicted = frame["risk_probability"].ge(threshold).astype(int)
+        tp = int(((actual == 1) & (predicted == 1)).sum())
+        tn = int(((actual == 0) & (predicted == 0)).sum())
+        fp = int(((actual == 0) & (predicted == 1)).sum())
+        fn = int(((actual == 1) & (predicted == 0)).sum())
+        title_suffix = f" tại ngưỡng cảnh báo {threshold:.1%}"
     matrix = np.array([[tn, fp], [fn, tp]])
     row_totals = matrix.sum(axis=1, keepdims=True)
     row_rates = np.divide(
@@ -1684,7 +1917,7 @@ def render_confusion_matrix(frame: pd.DataFrame) -> tuple[int, int, int, int]:
         )
     )
     figure.update_layout(
-        title="12 · Model dự báo đúng và sai ở đâu?",
+        title=f"15 · Model dự báo đúng và sai ở đâu{title_suffix}?",
         xaxis_title="Kết quả model dự báo",
         yaxis_title="Kết quả thực tế",
     )
@@ -1695,6 +1928,181 @@ def render_confusion_matrix(frame: pd.DataFrame) -> tuple[int, int, int, int]:
         f"qua môn và cảnh báo nhầm {fp:,}. Phần trăm được tính trong từng hàng kết quả thật."
     )
     return tp, tn, fp, fn
+
+
+def render_threshold_decision(
+    frame: pd.DataFrame,
+    threshold: float,
+    tp: int,
+    tn: int,
+    fp: int,
+    fn: int,
+) -> None:
+    """Turn the selected threshold and its error counts into one decision statement."""
+
+    official = float(frame["prediction_threshold"].dropna().iloc[0])
+    actual_fail = tp + fn
+    recall = tp / actual_fail if actual_fail else 0.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
+
+    actual = frame["actual_fail"].astype(int)
+    official_prediction = frame["risk_probability"].ge(official).astype(int)
+    official_fp = int(((actual == 0) & (official_prediction == 1)).sum())
+    official_fn = int(((actual == 1) & (official_prediction == 0)).sum())
+
+    if np.isclose(threshold, official):
+        recommendation = (
+            f"Giữ ngưỡng chuẩn {official:.1%}: ngưỡng này đạt yêu cầu phát hiện tối "
+            "thiểu 75% lượt Fail và cân bằng khối lượng cảnh báo."
+        )
+    elif threshold > official:
+        fewer_false_alarms = max(0, official_fp - fp)
+        extra_misses = max(0, fn - official_fn)
+        recommendation = (
+            f"So với ngưỡng chuẩn {official:.1%}, ngưỡng cao hơn giảm "
+            f"{fewer_false_alarms:,} cảnh báo nhầm nhưng bỏ sót thêm "
+            f"{extra_misses:,} lượt Fail."
+        )
+    else:
+        fewer_misses = max(0, official_fn - fn)
+        extra_false_alarms = max(0, fp - official_fp)
+        recommendation = (
+            f"So với ngưỡng chuẩn {official:.1%}, ngưỡng thấp hơn phát hiện thêm "
+            f"{fewer_misses:,} lượt Fail nhưng tạo thêm {extra_false_alarms:,} cảnh báo nhầm."
+        )
+
+    st.markdown(
+        f"""
+        <div class="definition-box">
+        <b>Ra quyết định tại ngưỡng {threshold:.1%}</b><br>
+        Phát hiện đúng <b>{tp:,}/{actual_fail:,}</b> lượt Fail (Recall <b>{recall:.1%}</b>);
+        trong các cảnh báo, <b>{precision:.1%}</b> là chính xác. Bỏ sót <b>{fn:,}</b>
+        và cảnh báo nhầm <b>{fp:,}</b> lượt.<br>
+        <b>Kết luận:</b> {recommendation}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_discrimination_curves(selected_threshold: float) -> None:
+    """Render ROC and Precision–Recall curves from the locked test artifact."""
+
+    curves = model_table("model_curve_points.csv")
+    curves = curves.loc[
+        curves["dataset_split"].eq("test")
+        & curves["model_name"].eq("logistic_regression")
+    ].copy()
+    metrics = model_table("model_metrics.csv")
+    metric = metrics.loc[
+        metrics["dataset_split"].eq("test")
+        & metrics["model_name"].eq("logistic_regression")
+    ].iloc[0]
+    roc = curves.loc[curves["curve"].eq("ROC")].sort_values("x")
+    precision_recall = curves.loc[
+        curves["curve"].eq("Precision-Recall")
+    ].sort_values("x")
+
+    figure = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            f"ROC · AUC {float(metric['roc_auc']):.3f}",
+            f"Precision–Recall · AUC {float(metric['pr_auc']):.3f}",
+        ),
+        horizontal_spacing=0.18,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=roc["x"],
+            y=roc["y"],
+            name="ROC",
+            mode="lines",
+            line={"color": "#2563EB", "width": 3},
+            hovertemplate="False Positive Rate=%{x:.1%}<br>Recall=%{y:.1%}<extra></extra>",
+        ),
+        row=1,
+        col=1,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=[0, 1],
+            y=[0, 1],
+            name="Đoán ngẫu nhiên",
+            mode="lines",
+            line={"color": "#94A3B8", "dash": "dash"},
+            hoverinfo="skip",
+        ),
+        row=1,
+        col=1,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=precision_recall["x"],
+            y=precision_recall["y"],
+            name="Precision–Recall",
+            mode="lines",
+            line={"color": "#DC2626", "width": 3},
+            hovertemplate="Recall=%{x:.1%}<br>Precision=%{y:.1%}<extra></extra>",
+        ),
+        row=1,
+        col=2,
+    )
+    prevalence = float(metric["at_risk_rate"])
+    figure.add_trace(
+        go.Scatter(
+            x=[0, 1],
+            y=[prevalence, prevalence],
+            name="Tỷ lệ Fail nền",
+            mode="lines",
+            line={"color": "#94A3B8", "dash": "dash"},
+            hovertemplate=f"Tỷ lệ Fail nền={prevalence:.1%}<extra></extra>",
+        ),
+        row=1,
+        col=2,
+    )
+    for column, subset in [(1, roc), (2, precision_recall)]:
+        finite = subset.loc[subset["threshold"].replace([np.inf, -np.inf], np.nan).notna()]
+        if finite.empty:
+            continue
+        selected = finite.loc[(finite["threshold"] - selected_threshold).abs().idxmin()]
+        figure.add_trace(
+            go.Scatter(
+                x=[float(selected["x"])],
+                y=[float(selected["y"])],
+                name=f"Ngưỡng {selected_threshold:.1%}" if column == 1 else None,
+                mode="markers",
+                marker={"color": "#F97316", "size": 12, "symbol": "diamond"},
+                showlegend=column == 1,
+                hovertemplate=(
+                    f"Ngưỡng≈{float(selected['threshold']):.1%}<br>x=%{{x:.1%}}"
+                    "<br>y=%{y:.1%}<extra></extra>"
+                ),
+            ),
+            row=1,
+            col=column,
+        )
+    figure.update_xaxes(
+        title_text="Tỷ lệ cảnh báo nhầm", tickformat=".0%", row=1, col=1
+    )
+    figure.update_yaxes(
+        title_text="Tỷ lệ phát hiện Fail", tickformat=".0%", row=1, col=1
+    )
+    figure.update_xaxes(
+        title_text="Tỷ lệ phát hiện Fail", tickformat=".0%", row=1, col=2
+    )
+    figure.update_yaxes(
+        title_text="Độ chính xác cảnh báo", tickformat=".0%", row=1, col=2
+    )
+    st.markdown("#### 16 · Logistic Regression phân biệt hai lớp tốt đến đâu?")
+    polish_figure(figure, height=510, legend="none")
+    figure.update_layout(margin={"l": 70, "r": 35, "t": 58, "b": 65})
+    st.plotly_chart(figure, width="stretch")
+    st.caption(
+        f"Xanh: ROC-AUC {float(metric['roc_auc']):.3f} · Đỏ: PR-AUC "
+        f"{float(metric['pr_auc']):.3f} · Xám đứt: baseline · Cam: ngưỡng chuẩn · "
+        f"Tỷ lệ Fail nền {prevalence:.1%}."
+    )
 
 
 def render_model_factors() -> None:
@@ -1733,7 +2141,7 @@ def render_model_factors() -> None:
         },
         custom_data=["odds_ratio"],
         labels={"coefficient": "Mức liên hệ trong mô hình (0 = không đổi)"},
-        title="13 · Yếu tố nào đi cùng nguy cơ trượt cao hơn hoặc thấp hơn?",
+        title="13 · Yếu tố nào được model sử dụng để nhận diện nguy cơ trượt?",
     )
     figure.add_vline(x=0, line_color="#64748B", line_width=1)
     figure.update_traces(
@@ -1743,12 +2151,6 @@ def render_model_factors() -> None:
     )
     polish_figure(figure, height=500)
     st.plotly_chart(figure, width="stretch")
-    st.caption(
-        "Hệ số là kết quả toàn cục của mô hình, không thay đổi theo bộ lọc nhân khẩu học "
-        "phía trên. Đây là mức liên hệ sau khi đã xét đồng thời các biến, không phải lời "
-        "giải thích riêng cho từng lượt học hay bằng chứng nhân quả. Hệ số dương đi cùng "
-        "nguy cơ trượt cao hơn; hệ số âm đi cùng nguy cơ thấp hơn."
-    )
 
 
 def build_model_operational_story(
@@ -1827,50 +2229,27 @@ def build_model_operational_story(
 
 
 def render_prediction_page() -> None:
-    render_header(
-        "Trang 4 · Mô hình dự báo",
-        "Mô hình nhận diện nguy cơ trượt dựa trên yếu tố nào?",
-        "Đánh giá độ tin cậy và xác định các yếu tố liên quan đến Fail ở mức tổng hợp.",
-        "Tập kiểm tra độc lập · Withdrawn không tham gia huấn luyện · dashboard không huấn luyện lại model",
-    )
-    render_term_guide(
-        [
-            ("Logistic Regression", "mô hình ước lượng xác suất trượt học phần"),
-            ("Tỷ lệ dự đoán đúng", "trong 100 lượt học, mô hình đoán đúng bao nhiêu lượt"),
-            ("Recall trượt", "trong 100 lượt thực sự trượt, mô hình cảnh báo được bao nhiêu lượt"),
-            ("Bỏ sót", "lượt thực sự trượt nhưng mô hình không cảnh báo"),
-        ]
-    )
     st.markdown(
-        """
-        <div class="definition-box"><b>Mô hình dự đoán gì?</b><br>
-        Mô hình dùng thông tin đăng ký, tiến độ bài tập và hoạt động VLE có đến ngày 105
-        để ước lượng xác suất kết quả cuối là <b>Fail</b>. Pass và Distinction là nhóm đối chứng;
-        Withdrawn được loại khỏi model. Kết quả được tổng hợp để đánh giá độ tin cậy
-        và xác định những yếu tố liên quan nổi bật.
-        Đây là <b>cảnh báo giữa khóa</b>, không phải dự đoán điểm số chính xác.</div>
-        """,
+        '<div class="page-kicker">Trang 4 · Mô hình dự báo</div>',
         unsafe_allow_html=True,
     )
+    st.title("Dự báo nguy cơ trượt và kiểm định kết quả")
+    render_model_summary()
     try:
         verification = model_table("model_verification.csv")
         if "status" not in verification or not verification["status"].eq("PASS").all():
             st.error("Kiểm tra mô hình chưa đạt; dashboard không công bố dự báo.")
             return
         base = prepare_risk_frame()
-        metrics = model_table("model_metrics.csv")
-        test_metric = metrics.loc[
-            metrics["model_name"].eq("logistic_regression")
-            & metrics["dataset_split"].eq("test")
-        ].iloc[0]
-        intervals = model_table("model_confidence_intervals.csv")
-        accuracy_ci = intervals.loc[intervals["metric"].eq("accuracy")].iloc[0]
     except (FileNotFoundError, ValueError) as exc:
         st.error(str(exc))
         return
 
+    official_threshold = float(base["prediction_threshold"].dropna().iloc[0])
     genders, age_bands, education_levels, imd_bands = context_filters(
-        base, key_prefix="model"
+        base,
+        key_prefix="model",
+        heading="Chọn nhóm dữ liệu để kiểm tra",
     )
     frame = filter_context(
         base, genders, age_bands, education_levels, imd_bands, []
@@ -1879,31 +2258,16 @@ def render_prediction_page() -> None:
         st.warning("Bộ lọc hiện tại không có lượt học trong tập dữ liệu kiểm tra.")
         return
 
-    accuracy, recall, precision = render_model_kpis(frame)
-    st.caption(
-        f"Các chỉ số phía trên tính trên {len(frame):,} lượt học trong bộ lọc hiện tại. "
-        f"Trên toàn bộ tập kiểm tra độc lập: Accuracy {test_metric['accuracy']:.1%} "
-        f"(KTC 95% {accuracy_ci['lower_95']:.1%}–{accuracy_ci['upper_95']:.1%}), "
-        f"Recall trượt {test_metric['recall_at_risk']:.1%}, Balanced Accuracy "
-        f"{test_metric['balanced_accuracy']:.1%}, ROC-AUC {test_metric['roc_auc']:.3f}."
-    )
-
-    render_story(
-        "STORY · Dự báo giúp hiểu yếu tố nào?",
-        build_model_operational_story(frame),
-    )
-
-    st.subheader("Độ tin cậy và các yếu tố liên quan đến dự báo Fail")
-    render_probability_validation(frame)
-    render_confusion_matrix(frame)
+    st.subheader("Từ xác suất đến quyết định")
+    render_sigmoid_probability_view(frame)
     render_model_factors()
-    st.info(
-        "Định hướng hành động: trong số các hệ số toàn cục đang hiển thị, các tín hiệu "
-        "hành vi đến ngày 105 có độ lớn nổi bật. Gián đoạn VLE và bài đến hạn chưa nộp "
-        "là những điểm chạm để cố vấn ưu tiên rà soát; việc duy trì hoạt động, hoàn thành "
-        "assessment và củng cố điểm quá trình là nội dung phù hợp để trao đổi hỗ trợ. "
-        "Dashboard không ước lượng tác động nhân quả của một biện pháp can thiệp."
-    )
+    selected_threshold = render_threshold_explorer(frame)
+    tp, tn, fp, fn = render_confusion_matrix(frame, selected_threshold)
+    render_threshold_decision(frame, selected_threshold, tp, tn, fp, fn)
+
+    st.subheader("Kiểm định tổng thể trên toàn bộ tập test")
+    render_model_kpis(base)
+    render_discrimination_curves(official_threshold)
 
 
 def main() -> None:

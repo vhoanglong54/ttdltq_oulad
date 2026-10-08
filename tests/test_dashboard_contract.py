@@ -60,7 +60,6 @@ class DashboardCalculationTests(unittest.TestCase):
         self.assertEqual(int(filtered.iloc[0]["id_student"]), 1)
         self.assertEqual(len(self.frame), 3)
 
-
 class DashboardMartTests(unittest.TestCase):
     def test_marts_support_meaningful_learner_context_filters(self) -> None:
         context = {"gender", "age_band", "highest_education", "imd_band", "region"}
@@ -134,7 +133,7 @@ class EvidenceContractTests(unittest.TestCase):
             for line in inventory.splitlines()
             if re.match(r"^\|\s*\d+\s*\|", line)
         ]
-        self.assertEqual(len(rows), 13)
+        self.assertEqual(len(rows), 16)
         self.assertTrue(all("→" in row or "↔" in row for row in rows))
 
         app_source = (ROOT / "dashboard" / "app.py").read_text(encoding="utf-8")
@@ -146,6 +145,22 @@ class EvidenceContractTests(unittest.TestCase):
             "outcome_drill_module",
         ):
             self.assertNotIn(removed_visual, app_source)
+
+    def test_logistic_dashboard_covers_probability_threshold_and_error_flow(self) -> None:
+        app_source = (ROOT / "dashboard" / "app.py").read_text(encoding="utf-8")
+        for required_element in (
+            "Logistic Regression dự báo gì?",
+            "xác suất một lượt học kết thúc bằng Fail",
+            "Sigmoid",
+            "p(Fail)",
+            "F1 Fail",
+            "Trở về ngưỡng chuẩn",
+            "render_confusion_matrix",
+            "render_threshold_decision",
+            "render_discrimination_curves",
+        ):
+            self.assertIn(required_element, app_source)
+        self.assertNotIn("render_model_scenario_explorer", app_source)
 
     def test_eda_outputs_cover_eight_insights_and_ten_hypotheses(self) -> None:
         insights = pd.read_csv(ROOT / "reports" / "eda" / "insight_evidence.csv")

@@ -23,7 +23,7 @@ Báo cáo phải đạt **ít nhất 40 trang** và dùng trích dẫn IEEE. Sơ
 3. Demo map cross-filter và drill từ học phần xuống đợt mở.
 4. Trang Các yếu tố học tập kết luận hoàn thành bài là yếu tố liên quan rõ nhất, sau đó đến mức tham gia học trực tuyến.
 5. Trang Kết hợp nhiều yếu tố so sánh nhóm thấp ở cả mức tham gia và điểm với nhóm cao ở cả hai; nêu thêm lịch sử học lại.
-6. Trang Dự đoán nói rõ mô hình dự báo `Fail` so với `Pass/Distinction`, loại `Withdrawn`, không dự đoán điểm; diễn giải số đúng, số phát hiện và số bỏ sót bằng ngôn ngữ “trong 100 lượt học”.
+6. Trang Dự đoán nói rõ mô hình dự báo `Fail` so với `Pass/Distinction`, loại `Withdrawn`, không dự đoán điểm; trình bày Sigmoid và xác suất từng quan sát, kéo threshold để giải thích đánh đổi Precision–Recall–F1, rồi dùng confusion matrix và ROC/PR để trình bày model đúng/sai đến đâu.
 7. Kết luận Story, hành động thận trọng và giới hạn.
 
 ## Nội dung phải tự giải thích được

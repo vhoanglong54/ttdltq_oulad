@@ -15,19 +15,20 @@ STORY: cơ cấu kết quả tổng thể, chênh lệch theo học vấn và v�
 
 ```text
 STORY: completion và tính liên tục của VLE là hai tín hiệu rõ nhất
-4. MULTI-LINE — nhịp VLE của Fail so với Pass/Distinction
-5. BAR — completion đến ngày 105 × tỷ lệ Fail
-6. SCATTER + TRENDLINE — submission delay × score
-7. GROUPED BAR — cơ cấu tài nguyên VLE × nhóm kết quả
+4. BAR AUC — mức phân biệt kết quả của từng yếu tố đơn lẻ
+5. MULTI-LINE — nhịp VLE của Fail so với Pass/Distinction
+6. BAR — completion đến ngày 105 × tỷ lệ Fail
+7. BAR CHUẨN HÓA — submission delay × chênh lệch điểm
+8. DOT PLOT TRỤC LOG — mức dùng tài nguyên VLE giữa hai nhóm kết quả
 ```
 
 ## Trang 3 — Kết hợp nhiều yếu tố
 
 ```text
 STORY: VLE thấp + điểm thấp; học vấn + IMD; lịch sử học lại
-8. HEATMAP — VLE quartile × assessment-score quartile → Fail
-9. HEATMAP — education × IMD → Fail
-10. BOX PLOT — previous attempts × điểm ngày 105
+9. HEATMAP — VLE quartile × assessment-score quartile → Fail
+10. HEATMAP — education × IMD → Fail
+11. BOX PLOT — previous attempts × điểm ngày 105
 ```
 
 ## Trang 4 — Mô hình và yếu tố dự báo
@@ -35,10 +36,15 @@ STORY: VLE thấp + điểm thấp; học vấn + IMD; lịch sử học lại
 ```text
 FILTER: giới tính │ tuổi │ học vấn đầu vào │ IMD
 KPI: Accuracy │ Recall Fail │ Precision Fail
-11. BAR + LINE — decile xác suất dự báo × tỷ lệ Fail thật
-12. CONFUSION MATRIX — kết quả thật × kết quả dự báo
+MODEL INPUT: nền tảng │ tiến độ assessment │ hoạt động VLE đến ngày 105
+MODEL SUMMARY: dự báo Fail tại ngày 105 │ cách đọc p(Fail) │ chuỗi thao tác
+12. SIGMOID + PROBABILITY STRIP — đường xác suất và từng quan sát theo lớp thật
 13. DIVERGING BAR — tín hiệu global của Logistic Regression
-STORY: model phân tầng được nguy cơ không, sai ở đâu, dựa vào yếu tố gì
+14. THRESHOLD LINE — ngưỡng × Recall/Precision/F1; nút trở về 33,5%
+15. CONFUSION MATRIX — kết quả thật × kết quả dự báo tại ngưỡng đang chọn
+DECISION: phát hiện đúng, bỏ sót, cảnh báo nhầm và khuyến nghị ngưỡng
+16. ROC + PRECISION–RECALL — kiểm định tổng thể trên mọi ngưỡng
+STORY: dự báo gì → chọn dữ liệu → xem xác suất → thử threshold → kiểm tra lỗi → ra quyết định → kiểm định tổng thể
 ```
 
 ## Quy tắc UX

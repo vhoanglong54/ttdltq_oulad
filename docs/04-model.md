@@ -137,11 +137,13 @@ Một số interaction theo module giúp Logistic Regression cho phép độ m�
 
 Dashboard trình bày:
 
-1. Accuracy, Recall Fail, Precision Fail và khoảng tin cậy trên test.
-2. Tỷ lệ `Fail` thật tăng thế nào từ nhóm xác suất dự báo thấp nhất đến cao nhất.
-3. Confusion matrix để biết model phát hiện, bỏ sót và cảnh báo nhầm bao nhiêu.
-4. Hệ số global giải thích tín hiệu tăng/giảm rủi ro.
-5. Đặc điểm tổng hợp của nhóm cảnh báo cao so với thấp để xác định yếu tố đáng chú ý.
+1. Một khối mở đầu ngắn nói model dự báo Fail tại ngày 105, cách đọc ngưỡng 0,335 và chuỗi thao tác; không liệt kê công thức dài.
+2. Đường Sigmoid và xác suất của từng lượt học trên tập test theo lớp thực tế.
+3. Hệ số global giải thích tín hiệu tăng/giảm rủi ro.
+4. Thanh trượt ngưỡng để thấy Recall, Precision, F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm thay đổi thế nào; có nút trở về ngưỡng nghiệm thu 0,335.
+5. Confusion matrix cập nhật theo ngưỡng đang thử để biết model đúng và sai ở đâu.
+6. Một khối kết luận giúp quyết định giữ, tăng hay giảm ngưỡng dựa trên bỏ sót và cảnh báo nhầm.
+7. Cuối trang mới đặt Accuracy, Recall Fail, Precision Fail, F1 Fail và ROC/PR trên toàn bộ test.
 
 Dashboard không công bố mã sinh viên, học phần, lớp học hoặc danh sách người được dự báo. Không dùng model để tự động xử phạt hoặc quyết định kết quả.
 

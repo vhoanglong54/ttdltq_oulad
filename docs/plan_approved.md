@@ -93,9 +93,12 @@ Mỗi insight phải có câu kết luận dễ hiểu, nhóm so sánh, tử s�
 
 ### Trang 4 — Cảnh báo sớm nguy cơ Fail
 
-- KPI: Accuracy, Recall Fail và Precision Fail.
-- Bar + line: xác suất dự báo và tỷ lệ `Fail` thật theo 10 nhóm.
+- Một ô mở đầu nói model dự báo Fail tại ngày 105, cách đọc ngưỡng 33,5% và chuỗi thao tác; không liệt kê công thức dài.
+- Sigmoid + probability strip: đường xác suất và từng quan sát theo lớp thật, có threshold 33,5%.
+- Thanh trượt threshold: cho thấy đánh đổi Recall/Precision/F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm; có nút trở về ngưỡng artifact đã nghiệm thu.
 - Confusion matrix heatmap cho đúng, cảnh báo nhầm và bỏ sót.
+- Khối quyết định giải thích nên giữ, tăng hay giảm ngưỡng dựa trên bỏ sót và cảnh báo nhầm.
+- Cuối trang: KPI Accuracy/Recall/Precision/F1 và ROC + Precision–Recall trên toàn bộ test.
 - ROC/PR curve trong phần kiểm định.
 - Bar hệ số cho các tín hiệu làm xác suất tăng/giảm.
 - Story: model ước lượng khả năng `Fail`, không dự đoán GPA hoặc điểm chính xác.

@@ -16,6 +16,9 @@
 | D12 | Chốt | Không dùng `date_unregistration`, target, `*_all_time` hay post-cutoff event làm feature. | Leakage guard |
 | D13 | Chốt | Dashboard chỉ đọc artifact đã verification; không train khi render. | Kiến trúc |
 | D14 | Đã chốt | Remote hiện hành: `https://github.com/vhoanglong54/ttdltq_oulad.git`, nhánh `main`; mỗi thay đổi mới vẫn cần leader duyệt trước commit/push. | Git |
+| D15 | Triển khai local, chờ duyệt | Trang 4 chỉ giữ trực quan cốt lõi của Logistic Regression: xác suất, threshold tương tác, confusion matrix, ROC/PR và hệ số; không hiển thị dự báo cá nhân. | Model/dashboard |
+| D16 | Triển khai local, chờ duyệt | Thay calibration decile bằng Sigmoid + probability strip; thêm F1 và reset threshold. Không dùng decision boundary 2D làm đại diện toàn bộ model nhiều biến. | Model/dashboard |
+| D17 | Triển khai local, chờ duyệt | Trang 4 đi theo chuỗi dự báo → xác suất → threshold → lỗi → quyết định; KPI chuẩn và ROC/PR đặt cuối trang. Khối mở đầu không liệt kê công thức. | Model/dashboard |
 
 ## Điểm mở trước nghiệm thu cuối
 
