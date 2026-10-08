@@ -30,6 +30,7 @@ class DashboardCalculationTests(unittest.TestCase):
                 "region": ["R1", "R2", "R1"],
                 "gender": ["F", "M", "F"],
                 "At_Risk": [0, 1, 1],
+                "not_complete": [0, 1, 0],
                 "assessment_scored_count": [2, 1, 0],
                 "assessment_score_sum_all_time": [160.0, 50.0, 0.0],
                 "vle_total_clicks_all_time": [100, 20, 30],
@@ -42,6 +43,8 @@ class DashboardCalculationTests(unittest.TestCase):
         self.assertEqual(result.learners, 2)
         self.assertEqual(result.at_risk_count, 2)
         self.assertAlmostEqual(result.at_risk_rate, 2 / 3)
+        self.assertEqual(result.not_complete_count, 1)
+        self.assertAlmostEqual(result.not_complete_rate, 1 / 3)
         self.assertAlmostEqual(result.average_assessment_score, 210 / 3)
         self.assertEqual(result.vle_total_clicks, 150)
 

@@ -295,6 +295,25 @@ def filter_context(
     return frame.loc[mask].copy()
 
 
+def filter_snapshot_context(
+    frame: pd.DataFrame,
+    genders: list[str],
+    age_bands: list[str],
+    education_levels: list[str],
+    imd_bands: list[str],
+) -> pd.DataFrame:
+    """Apply the shared learner-context filters to a checkpoint snapshot.
+
+    Snapshot tables have the same four learner-context fields as the descriptive
+    dataset but do not carry the Page 1 geographic cross-filter. Delegating to
+    ``filter_context`` keeps Pages 2 and 3 aligned with the selected controls
+    without mutating the source frame.
+    """
+    return filter_context(
+        frame, genders, age_bands, education_levels, imd_bands, []
+    )
+
+
 def page_navigation() -> str:
     st.sidebar.title("Phân tích kết quả học tập")
     st.sidebar.caption(
@@ -655,6 +674,56 @@ def comparison_message(
         f"{low_display} ({low['mean']:.1%}, N={int(low['size']):,})."
     )
 
+
+
+def render_score_distribution(frame: pd.DataFrame) -> None:
+    """Render the descriptive score distribution for the current Page 1 scope.
+
+    Assessment scores are unavailable for attempts without a graded assessment.
+    Those attempts remain in the page-level KPIs and outcome chart, but cannot be
+    placed on a score distribution; the caption makes that denominator explicit.
+    """
+    score_column = "assessment_score_mean_all_time"
+    if score_column not in frame.columns:
+        st.warning("Không tìm thấy trường điểm assessment để hiển thị biểu đồ.")
+        return
+
+    data = frame.loc[:, ["final_result", score_column]].copy()
+    data[score_column] = pd.to_numeric(data[score_column], errors="coerce")
+    data = data.dropna(subset=[score_column])
+    if data.empty:
+        st.info("Không có điểm assessment đã chấm trong phạm vi bộ lọc hiện tại.")
+        return
+
+    figure = px.violin(
+        data,
+        x="final_result",
+        y=score_column,
+        color="final_result",
+        category_orders={"final_result": RESULT_ORDER},
+        color_discrete_map=RESULT_COLORS,
+        box=True,
+        points=False,
+        labels={
+            "final_result": "Kết quả cuối",
+            score_column: "Điểm assessment trung bình",
+        },
+        title="3 · Phân bố điểm quá trình theo kết quả cuối",
+    )
+    figure.update_traces(
+        hovertemplate=(
+            "Kết quả cuối=%{x}<br>Điểm assessment trung bình=%{y:.1f}"
+            "<extra></extra>"
+        )
+    )
+    figure.update_yaxes(range=[0, 100], dtick=20)
+    polish_figure(figure, height=470)
+    st.plotly_chart(figure, width="stretch")
+    st.caption(
+        f"Có {len(data):,}/{len(frame):,} lượt học có ít nhất một assessment được chấm. "
+        "Các lượt không có điểm vẫn được giữ trong cơ cấu kết quả phía trên, "
+        "nhưng không thể hiện trong biểu đồ phân bố điểm."
+    )
 
 
 def render_overview_page() -> None:
