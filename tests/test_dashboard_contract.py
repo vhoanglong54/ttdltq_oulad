@@ -132,14 +132,18 @@ class EvidenceContractTests(unittest.TestCase):
         app.radio[0].set_value("Prediction & Action").run()
         self.assertFalse(app.exception)
 
-        def selected_markers() -> dict[str, tuple[float, float]]:
+        def selected_markers() -> dict[str, tuple[float, float, str | None]]:
             for chart in app.get("plotly_chart"):
                 spec = json.loads(chart.spec)
                 title = spec.get("layout", {}).get("title", {}).get("text", "")
                 if not title.startswith("14 ·"):
                     continue
                 return {
-                    trace["name"]: (float(trace["x"][0]), float(trace["y"][0]))
+                    trace["name"]: (
+                        float(trace["x"][0]),
+                        float(trace["y"][0]),
+                        trace.get("hoverinfo"),
+                    )
                     for trace in spec["data"]
                     if trace.get("mode") == "markers"
                     and "tại ngưỡng đang thử" in trace.get("name", "")
@@ -155,15 +159,25 @@ class EvidenceContractTests(unittest.TestCase):
                 "F1 Fail tại ngưỡng đang thử",
             },
         )
-        self.assertTrue(all(abs(x - 0.335) < 1e-9 for x, _ in initial.values()))
+        self.assertTrue(
+            all(
+                abs(x - 0.335) < 1e-9 and hoverinfo == "skip"
+                for x, _, hoverinfo in initial.values()
+            )
+        )
 
         app.slider[0].set_value(50.0).run()
         self.assertFalse(app.exception)
         moved = selected_markers()
-        self.assertTrue(all(abs(x - 0.5) < 1e-9 for x, _ in moved.values()))
+        self.assertTrue(
+            all(
+                abs(x - 0.5) < 1e-9 and hoverinfo == "skip"
+                for x, _, hoverinfo in moved.values()
+            )
+        )
         self.assertNotEqual(
-            {name: y for name, (_, y) in initial.items()},
-            {name: y for name, (_, y) in moved.items()},
+            {name: y for name, (_, y, _) in initial.items()},
+            {name: y for name, (_, y, _) in moved.items()},
         )
 
     def test_every_dashboard_visual_has_an_outcome_question(self) -> None:

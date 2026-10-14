@@ -1845,9 +1845,7 @@ def render_threshold_explorer(frame: pd.DataFrame) -> float:
                     "line": {"color": color, "width": 4},
                 },
                 showlegend=False,
-                hovertemplate=(
-                    f"Ngưỡng đang thử=%{{x:.1%}}<br>{name}=%{{y:.1%}}<extra></extra>"
-                ),
+                hoverinfo="skip",
             )
         )
     if np.isclose(selected_threshold, artifact_threshold):
