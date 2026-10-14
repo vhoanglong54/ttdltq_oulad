@@ -1811,11 +1811,12 @@ def render_threshold_explorer(frame: pd.DataFrame) -> float:
     )
 
     figure = go.Figure()
-    for name, color, dash in [
+    metric_styles = [
         ("Recall Fail", "#DC2626", "solid"),
         ("Precision Fail", "#2563EB", "solid"),
         ("F1 Fail", "#0F766E", "dash"),
-    ]:
+    ]
+    for name, color, dash in metric_styles:
         figure.add_trace(
             go.Scatter(
                 x=tradeoff["threshold"],
@@ -1824,6 +1825,29 @@ def render_threshold_explorer(frame: pd.DataFrame) -> float:
                 mode="lines",
                 line={"color": color, "width": 3, "dash": dash},
                 hovertemplate=f"Ngưỡng=%{{x:.1%}}<br>{name}=%{{y:.1%}}<extra></extra>",
+            )
+        )
+    selected_metrics = {
+        "Recall Fail": recall,
+        "Precision Fail": precision,
+        "F1 Fail": f1,
+    }
+    for name, color, _ in metric_styles:
+        figure.add_trace(
+            go.Scatter(
+                x=[selected_threshold],
+                y=[selected_metrics[name]],
+                mode="markers",
+                name=f"{name} tại ngưỡng đang thử",
+                marker={
+                    "size": 16,
+                    "color": "#FFFFFF",
+                    "line": {"color": color, "width": 4},
+                },
+                showlegend=False,
+                hovertemplate=(
+                    f"Ngưỡng đang thử=%{{x:.1%}}<br>{name}=%{{y:.1%}}<extra></extra>"
+                ),
             )
         )
     if np.isclose(selected_threshold, artifact_threshold):
@@ -1860,7 +1884,8 @@ def render_threshold_explorer(frame: pd.DataFrame) -> float:
     st.plotly_chart(figure, width="stretch")
     st.caption(
         f"Ngưỡng chuẩn {artifact_threshold:.1%}: Accuracy cao nhất trong các ngưỡng "
-        "vẫn đạt Recall Fail tối thiểu 75% trên validation."
+        "vẫn đạt Recall Fail tối thiểu 75% trên validation. Ba chấm trên đường biểu diễn "
+        "Recall, Precision và F1 tại ngưỡng đang thử."
     )
     return float(selected_threshold)
 

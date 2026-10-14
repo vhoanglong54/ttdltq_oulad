@@ -17,7 +17,7 @@ Insight dữ liệu nằm ở ba trang đầu; model là phần riêng ở Trang
 - Tiêu đề biểu đồ là câu hỏi hoặc kết luận dễ hiểu.
 - Trục, đơn vị, legend, hover, màu và cỡ mẫu `N` đầy đủ.
 - Xanh: kết quả tốt/an toàn; cam: cần chú ý; đỏ: Fail/cảnh báo; xám: thiếu dữ liệu.
-- Không gộp `Fail` và `Withdrawn`.
+- Không gộp `Fail` và `Withdrawn` trong KPI học thuật hoặc model. Riêng bản đồ dùng chỉ số rộng hơn **Không hoàn thành = Fail + Withdrawn** và phải ghi rõ định nghĩa.
 - “VLE” luôn giải thích là hệ thống học trực tuyến; click không phải thời gian tự học hay điểm danh.
 - Day 105 phải ghi “cảnh báo giữa khóa”.
 - Mỗi story nêu kết luận, hai số so sánh, cỡ mẫu/phạm vi và hành động hoặc giới hạn.
@@ -29,7 +29,7 @@ Mục tiêu: cho biết kết quả nào phổ biến và khác biệt tập tru
 
 - Filter: giới tính, tuổi, học vấn đầu vào, IMD; click map tạo cross-filter vùng.
 - KPI: tổng sinh viên, điểm assessment trung bình, tỷ lệ Pass/Distinction, tỷ lệ Fail.
-- Geographic Filled Map: tỷ lệ Fail theo 13 vùng OULAD; click vùng lọc cả trang.
+- Geographic Filled Map: tỷ lệ Không hoàn thành (`Fail + Withdrawn`) theo 13 vùng OULAD; click vùng lọc cả trang.
 - 100% stacked bar: cơ cấu tổng thể Distinction/Pass/Fail/Withdrawn; drill có chủ đích xuống học vấn đầu vào.
 - Violin + box: phân bố điểm quá trình theo kết quả cuối.
 - Story: Fail và Withdrawn tách riêng; nêu cơ cấu tổng thể và chênh lệch theo học vấn/vùng cùng `N`.
@@ -63,7 +63,7 @@ Mục tiêu: trả lời rõ “dự báo cái gì, đúng đến đâu và yế
 - Filter: giới tính, tuổi, học vấn đầu vào và IMD.
 - Một khối mở đầu ngắn: model dự báo Fail tại ngày 105, cách đọc ngưỡng 33,5% và chuỗi thao tác từ chọn dữ liệu đến quyết định; không liệt kê công thức hoặc danh sách biến dài.
 - Sigmoid + probability strip: đường chữ S, threshold 33,5% và xác suất từng lượt học theo lớp thực tế.
-- Threshold trade-off tương tác: kéo ngưỡng và cập nhật Recall, Precision, F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm; có nút trở về ngưỡng chuẩn.
+- Threshold trade-off tương tác: kéo ngưỡng và cập nhật Recall, Precision, F1, tỷ lệ cảnh báo, bỏ sót và cảnh báo nhầm; vạch đứng cùng ba chấm giao điểm đánh dấu giá trị đang thử; có nút trở về ngưỡng chuẩn.
 - Confusion matrix heatmap: số và tỷ lệ dự báo đúng, cảnh báo nhầm, bỏ sót tại ngưỡng đang thử.
 - ROC + Precision–Recall: kiểm tra khả năng phân biệt hai lớp trên toàn bộ ngưỡng; đánh dấu vị trí gần ngưỡng đang chọn.
 - Bar hệ số: những tín hiệu global đi cùng nguy cơ cao/thấp.
@@ -90,4 +90,4 @@ Mục tiêu: trả lời rõ “dự báo cái gì, đúng đến đâu và yế
 - Metric Trang 4 khớp artifact test; threshold không ghi cứng.
 - Thay đổi threshold phải cập nhật Precision/Recall/F1, tỷ lệ cảnh báo và confusion matrix; nút reset phải đưa về ngưỡng chuẩn từ artifact.
 - Inventory phải ghi rõ câu hỏi và insight của từng visual; không có chart mang tính liệt kê.
-- Không còn nội dung Power BI/Tableau hoặc nhãn Fail+Withdrawn cũ ngoài rubric được bảo vệ.
+- Tài liệu và giao diện chỉ mô tả stack Python Streamlit + Plotly; nhãn model luôn là Fail và tách Withdrawn.

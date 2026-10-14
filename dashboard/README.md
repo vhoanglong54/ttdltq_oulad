@@ -23,16 +23,33 @@ App cần:
 - `data/processed/model/*`
 - `dashboard/assets/oulad_regions.geojson`
 
-## Cấu trúc
+## Nguồn dữ liệu và cấu trúc
 
 | File | Vai trò |
 |---|---|
 | `app.py` | Giao diện bốn trang, state, filter, chart và Story |
 | `dashboard_data.py` | Loader, schema guard, filter và KPI |
 | `chart-inventory.md` | Inventory visual và mục đích phân tích |
-| `wireframe.md` | Bố cục bốn trang |
-| `qa-t09.md` | Baseline và cổng QA |
-| `assets/` | GeoJSON, mapping audit, nguồn/giấy phép |
-| `evidence/` | Automated QA và screenshot browser thật |
+| `assets/` | GeoJSON, mapping audit, nguồn và giấy phép |
+| `evidence/` | Screenshot phục vụ đối chiếu trực quan; ảnh cũ chỉ là lịch sử |
 
-Chi tiết logic ở [đặc tả dashboard](../docs/05-dashboard-spec.md), model ở [04-model.md](../docs/04-model.md), tổng kết ở [10-implementation-summary.md](../docs/10-implementation-summary.md).
+Dashboard chỉ đọc các nguồn đã tạo sẵn:
+
+```text
+data/processed/clean_dataset.csv
+data/processed/dashboard/*
+data/processed/model_academic_fail/c105_final/*
+dashboard/assets/oulad_regions.geojson
+```
+
+Ứng dụng không train model và không đọc hàng triệu event VLE khi render. Chi tiết logic nằm ở [đặc tả dashboard](../docs/05-dashboard-spec.md), [chart inventory](chart-inventory.md) và [tài liệu model](../docs/04-model.md).
+
+## Kiểm tra
+
+```powershell
+python -m compileall dashboard src tests
+python -m unittest discover -s tests -v
+python src/at_risk_model.py validate --output-dir data/processed/model_academic_fail/c105_final --model-path models/logistic_academic_fail_c105_final.joblib
+```
+
+Sau khi đổi data, model hoặc giao diện, phải chạy lại kiểm thử và chụp lại bốn trang trước khi dùng ảnh làm bằng chứng nộp bài.

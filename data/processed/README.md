@@ -14,7 +14,8 @@ python src/dashboard_features.py
 - Hạt: một lượt học `(code_module, code_presentation, id_student)`.
 - Kích thước lần chạy hiệu chỉnh 06/10/2026: 32.593 dòng, 35 cột, 0 duplicate attempt key; `clean_dataset.csv` SHA-256 `70db1ff19a1dc8553005b0e3801786d20ab1488cc3420a2fe15c5a2254d80f9a`.
 - Base là `studentInfo`; `studentRegistration` và `courses` left join one-to-one/many-to-one. `studentAssessment` và `studentVle` được aggregate trước left join nên không nhân dòng.
-- `At_Risk`: `Fail`/`Withdrawn` = 1, `Pass`/`Distinction` = 0. Đây là nhãn, không phải feature model.
+- `Academic_Fail`: `Fail` = 1, `Pass`/`Distinction` = 0; `Withdrawn` được tách riêng.
+- `At_Risk`: alias tương thích của `Academic_Fail`, không phải feature model.
 
 ## Schema
 

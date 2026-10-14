@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 from shapely.geometry import shape
+from streamlit.testing.v1 import AppTest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -124,6 +125,47 @@ class DashboardMartTests(unittest.TestCase):
 
 
 class EvidenceContractTests(unittest.TestCase):
+    def test_threshold_markers_follow_selected_threshold(self) -> None:
+        app = AppTest.from_file(
+            str(ROOT / "dashboard" / "app.py"), default_timeout=60
+        ).run()
+        app.radio[0].set_value("Prediction & Action").run()
+        self.assertFalse(app.exception)
+
+        def selected_markers() -> dict[str, tuple[float, float]]:
+            for chart in app.get("plotly_chart"):
+                spec = json.loads(chart.spec)
+                title = spec.get("layout", {}).get("title", {}).get("text", "")
+                if not title.startswith("14 ·"):
+                    continue
+                return {
+                    trace["name"]: (float(trace["x"][0]), float(trace["y"][0]))
+                    for trace in spec["data"]
+                    if trace.get("mode") == "markers"
+                    and "tại ngưỡng đang thử" in trace.get("name", "")
+                }
+            self.fail("Không tìm thấy Biểu đồ 14 trong Streamlit AppTest.")
+
+        initial = selected_markers()
+        self.assertEqual(
+            set(initial),
+            {
+                "Recall Fail tại ngưỡng đang thử",
+                "Precision Fail tại ngưỡng đang thử",
+                "F1 Fail tại ngưỡng đang thử",
+            },
+        )
+        self.assertTrue(all(abs(x - 0.335) < 1e-9 for x, _ in initial.values()))
+
+        app.slider[0].set_value(50.0).run()
+        self.assertFalse(app.exception)
+        moved = selected_markers()
+        self.assertTrue(all(abs(x - 0.5) < 1e-9 for x, _ in moved.values()))
+        self.assertNotEqual(
+            {name: y for name, (_, y) in initial.items()},
+            {name: y for name, (_, y) in moved.items()},
+        )
+
     def test_every_dashboard_visual_has_an_outcome_question(self) -> None:
         inventory = (ROOT / "dashboard" / "chart-inventory.md").read_text(
             encoding="utf-8"

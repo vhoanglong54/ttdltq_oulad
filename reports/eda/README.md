@@ -36,7 +36,7 @@ Không trộn hai mẫu số. Dữ liệu toàn khóa mô tả kết quả; snap
 | File | Ý nghĩa |
 |---|---|
 | `insight_evidence.csv` | Sáu so sánh chính, N, rate, chênh lệch, risk ratio, phạm vi và giới hạn |
-| `hypothesis_results.csv` | Kết quả H01–H10 theo ID trong `docs/plan_approved.md` |
+| `hypothesis_results.csv` | Kết quả H01–H10; đối chiếu câu hỏi nghiên cứu trong `docs/01-project-charter.md` và insight trong `docs/insight-log.md` |
 | `outcome_by_module_presentation.csv` | Bốn kết quả theo module/presentation |
 | `module_presentation_risk.csv` | At-Risk rate và CI theo module/presentation |
 | `vle_weekly_trend.csv` | Click trung bình và tỷ lệ active theo tuần |

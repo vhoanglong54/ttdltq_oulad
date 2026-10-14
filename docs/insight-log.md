@@ -2,6 +2,8 @@
 
 Đây là nơi nghiệm thu insight phân tích dữ liệu. Model ở `04-model.md` là phần riêng. Tất cả kết luận dưới đây nói **liên quan/đi cùng**, không chứng minh nhân quả.
 
+Lưu ý về địa lý: INS-06 đo riêng tỷ lệ `Fail` từ EDA. Geographic Map trên dashboard dùng chỉ số rộng hơn **Không hoàn thành = Fail + Withdrawn**. Hai tỷ lệ không được dùng thay thế cho nhau.
+
 ## Tóm tắt dễ trình bày
 
 1. **Nền tảng học vấn đi cùng khác biệt rõ:** nhóm không có bằng cấp chính quy có tỷ lệ Fail 27,38%, còn nhóm sau đại học là 10,86%.
@@ -22,7 +24,7 @@
 | INS-03 | Completion 0% Fail **95,88%** (N=1.382), completion 100% **18,75%** (N=17.569), chênh **77,12 điểm %**. | Assessment đã đến hạn tại ngày 105. | `assessment_completion.csv` | Ưu tiên nhắc bài đến hạn; lịch assessment khác nhau giữa module. |
 | INS-04 | VLE thấp + điểm thấp Fail **65,56%** (N=1.507), cao + cao **4,58%** (N=2.098), chênh **60,98 điểm %**. | Snapshot ngày 105, nhóm có điểm để xếp quartile. | `engagement_assessment_matrix.csv` | Dùng hai tín hiệu cùng lúc tốt hơn nhìn một chỉ số; không phải công thức nhân quả. |
 | INS-05 | Có ≥1 lần học trước Fail **48,83%** (N=2.697), lần đầu **29,02%** (N=19.730), chênh **19,82 điểm %**. | Cohort model ngày 105. | `previous_attempts.csv` | Cho phép ưu tiên hỗ trợ bổ sung, không gắn nhãn năng lực. |
-| INS-06 | Wales Fail **29,72%** (N=2.086), South Region **17,59%** (N=3.092), chênh **12,13 điểm %**. | Toàn khóa; vùng cư trú OULAD. | `region_risk.csv`, Geographic Map | Xem thêm cơ cấu module/IMD/cohort; bản đồ không chứng minh vùng gây Fail. |
+| INS-06 | Wales Fail **29,72%** (N=2.086), South Region **17,59%** (N=3.092), chênh **12,13 điểm %**. | Toàn khóa; vùng cư trú OULAD. | `region_risk.csv`; đây là metric Fail riêng, không phải metric của Geographic Map | Xem thêm cơ cấu module/IMD/cohort; khác biệt vùng không chứng minh vùng gây Fail. |
 | INS-07 | Nộp trễ >7 ngày có median điểm chênh lệch **-6.77**, trong khi đúng hạn là **+0.60** và sớm 1-7 ngày là **+5.18**. Spearman = **-0.09**. | Các bài tập đã nộp. | `delay_score_buckets.csv`, bar chart | Nộp trễ >7 ngày kéo điểm xuống rõ rệt. Xu hướng không tuyến tính hoàn toàn. |
 | INS-08 | Quartile ít ngày hoạt động nhất trong 28 ngày Fail **69,02%** (N=5.607), nhiều nhất **9,65%** (N=5.607), chênh **59,37 điểm %**. | Cohort model ngày 105. | `feature_snapshot.csv`, coefficient model | Theo dõi sự gián đoạn gần đây để liên hệ hỗ trợ; VLE không bao quát học offline. |
 

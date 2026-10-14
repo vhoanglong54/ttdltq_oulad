@@ -5,7 +5,7 @@ Quy tắc nghiệm thu: một biểu đồ chỉ được giữ khi nối trực
 | # | Trực quan | Yếu tố → kết quả | Câu hỏi/insight phải trả lời |
 |---:|---|---|---|
 | 1 | 100% Stacked Bar | Tổng thể hoặc học vấn đầu vào → bốn kết quả | Cơ cấu Xuất sắc/Qua môn/Trượt/Rút học ra sao; cơ cấu thay đổi thế nào theo học vấn? |
-| 2 | Geographic Filled Map | Vùng cư trú → tỷ lệ `Fail` | Khu vực nào có tỷ lệ trượt cao/thấp và chênh lệch bao nhiêu? |
+| 2 | Geographic Filled Map | Vùng cư trú → tỷ lệ Không hoàn thành (`Fail + Withdrawn`) | Khu vực nào có tỷ lệ không hoàn thành cao/thấp và chênh lệch bao nhiêu? |
 | 3 | Violin + Box | Điểm quá trình → kết quả cuối | Phân bố và trung vị điểm khác nhau thế nào giữa bốn kết quả? |
 | 4 | Bar xếp hạng AUC | Từng yếu tố đơn lẻ ↔ khả năng phân biệt kết quả | Yếu tố nào tự nó phân biệt nhóm kết quả rõ hơn trước khi kết hợp trong model? |
 | 5 | Multi-Line | Nhịp hoạt động VLE → `Fail`/qua môn | Hoạt động trực tuyến của hai nhóm tách nhau như thế nào theo thời gian? |
@@ -17,7 +17,7 @@ Quy tắc nghiệm thu: một biểu đồ chỉ được giữ khi nối trực
 | 11 | Box Plot | Lịch sử học lại → điểm sớm | Điểm số phân bố khác nhau thế nào theo số lần từng học? |
 | 12 | Sigmoid + Probability Strip | Điểm `z` → `p(Fail)`; xác suất từng quan sát ↔ lớp thật | Logistic biến điểm tuyến tính thành xác suất thế nào và hai lớp nằm ở đâu so với ngưỡng 33,5%? |
 | 13 | Diverging Bar | Tín hiệu đầu vào → nguy cơ model | Tín hiệu nào đi cùng nguy cơ `Fail` cao hơn hoặc thấp hơn? |
-| 14 | Threshold Trade-off Line | Ngưỡng phân loại ↔ Recall/Precision/F1 | Hạ hoặc tăng ngưỡng làm khả năng phát hiện và độ chính xác cảnh báo thay đổi ra sao? |
+| 14 | Threshold Trade-off Line | Ngưỡng phân loại ↔ Recall/Precision/F1 | Hạ hoặc tăng ngưỡng làm khả năng phát hiện và độ chính xác cảnh báo thay đổi ra sao? Vạch đứng và ba chấm giao điểm cho biết các giá trị tại ngưỡng đang thử. |
 | 15 | Confusion Matrix Heatmap | Dự báo ↔ kết quả thật | Model phát hiện, bỏ sót và cảnh báo nhầm bao nhiêu tại ngưỡng đang chọn? |
 | 16 | ROC + Precision–Recall | Khả năng phân biệt ↔ kết quả thật | Logistic Regression xếp hạng hai lớp tốt đến đâu trên mọi ngưỡng? |
 

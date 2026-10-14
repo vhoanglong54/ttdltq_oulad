@@ -9,17 +9,19 @@ Kết quả được xem theo hai lớp:
 
 Model dùng dữ liệu có đến ngày 105 để đưa ra **cảnh báo giữa khóa**. Trên tập kiểm tra độc lập, Accuracy đạt **83,68%**, Recall Fail **75,55%**, Balanced Accuracy **81,48%**, ROC-AUC **0,902**. Model không dự đoán GPA, điểm cuối chính xác hay nguyên nhân nhân quả.
 
-## Tài liệu chính
+## Tài liệu chuẩn
 
-1. [Plan đã duyệt](docs/plan_approved.md)
-2. [Mục tiêu và phạm vi](docs/01-project-charter.md)
-3. [Rubric traceability — không sửa tiêu chí](docs/02-rubric-traceability.md)
-4. [Kế hoạch dữ liệu](docs/03-data-plan.md)
-5. [Model Logistic Regression](docs/04-model.md)
-6. [Đặc tả dashboard](docs/05-dashboard-spec.md)
-7. [Data dictionary](docs/09-data-dictionary.md)
-8. [Nhật ký insight](docs/insight-log.md)
-9. [Tổng kết triển khai](docs/10-implementation-summary.md)
+| Nội dung | Tài liệu nguồn |
+|---|---|
+| Phạm vi và câu hỏi nghiên cứu | [Project charter](docs/01-project-charter.md) |
+| Tiêu chí chấm và bằng chứng | [Rubric traceability](docs/02-rubric-traceability.md) |
+| Kiến trúc và hợp đồng dữ liệu | [Data plan](docs/03-data-plan.md), [data dictionary](docs/09-data-dictionary.md) |
+| Logistic Regression | [Model](docs/04-model.md) |
+| Dashboard và trực quan | [Dashboard spec](docs/05-dashboard-spec.md), [chart inventory](dashboard/chart-inventory.md) |
+| Insight đã kiểm tra | [Insight log](docs/insight-log.md) |
+| Chất lượng dữ liệu và EDA | [Data Quality Report](reports/data-quality-report.md), [EDA evidence](reports/eda/README.md) |
+
+Chỉ các tài liệu trong bảng trên được dùng làm nguồn mô tả chính thức của dự án.
 
 ## Cấu trúc
 

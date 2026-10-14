@@ -1,6 +1,6 @@
 # Dữ liệu
 
-`raw/` giữ nguyên nguồn cục bộ và `interim/` là bảng tạm; CSV trong hai thư mục này bị `.gitignore`. `processed/` là đầu ra tái tạo được; `clean_dataset.csv`, bundle model cuối và bốn mart trong `processed/dashboard/` đã được đưa lên `ttdltq_finalVER2/main` tại mốc `1499c40` để dashboard có thể chạy sau khi clone.
+`raw/` giữ nguyên nguồn cục bộ và `interim/` là bảng tạm; CSV trong hai thư mục này bị `.gitignore`. `processed/` chứa đầu ra tái tạo được. Repo hiện hành theo dõi `clean_dataset.csv`, các mart dashboard và artifact model cần thiết để ứng dụng chạy sau khi clone.
 
 ## T01 — Xác minh nguồn OULAD
 
@@ -40,7 +40,7 @@ Tổng số dòng của 7 CSV là **10.900.970**, nên đáp ứng điều kiệ
 
 ### Giới hạn và đầu ra sử dụng
 
-- File `OULAD.names` đi kèm ghi 32.953 lượt học/đăng ký, còn `studentInfo.csv` và `studentRegistration.csv` cục bộ đều có 32.593 dòng. Chênh lệch tài liệu này được theo dõi ở [decision log](../docs/08-decisions-and-open-questions.md); không thay đổi dữ liệu ở T01.
+- File `OULAD.names` đi kèm ghi 32.953 lượt học/đăng ký, còn `studentInfo.csv` và `studentRegistration.csv` cục bộ đều có 32.593 dòng. Pipeline sử dụng số dòng thực tế của CSV và không sửa raw để khớp mô tả.
 - Bằng chứng hiện có xác nhận file cục bộ và phù hợp dữ liệu/rubric. Archive UCI chính thức đã được tải lại và 7 checksum trùng khớp. Giới hạn ngày tải cục bộ ban đầu và chênh lệch tài liệu vẫn được giữ ở decision log; data dictionary và kiểm tra schema là bằng chứng bổ sung cho mục Dataset.
 - T02 có thể dùng bảng kiểm kê này, nhưng phải lập `docs/09-data-dictionary.md` theo schema thực tế; chưa suy luận uniqueness hay độ sạch trước T05.
 
@@ -58,4 +58,4 @@ T02 phát hiện `?` là mã thiếu/không biết tại một số cột; chưa
 
 Data Quality Report cho audit, cleaning, aggregate/join và test thực nằm tại [reports/data-quality-report.md](../reports/data-quality-report.md). `data/processed/clean_dataset.csv` được theo dõi làm nguồn processed chuẩn và vẫn tái tạo được bằng script; schema/hạt/guard leakage nằm tại [data/processed/README.md](processed/README.md).
 
-Thông tin sử dụng được đặt ngay tại nguồn: schema, hạt và guard leakage ở [data/processed/README.md](processed/README.md); mục tiêu và phương pháp ở [tài liệu model](../docs/04-model.md); dữ liệu đầu vào dashboard Python và quy tắc KPI ở [dashboard/build-guide.md](../dashboard/build-guide.md).
+Thông tin sử dụng được đặt ngay tại nguồn: schema, hạt và guard leakage ở [data/processed/README.md](processed/README.md); mục tiêu và phương pháp ở [tài liệu model](../docs/04-model.md); dữ liệu đầu vào và cách chạy dashboard ở [dashboard/README.md](../dashboard/README.md).
