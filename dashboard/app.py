@@ -1913,9 +1913,16 @@ def render_confusion_matrix(
         out=np.zeros_like(matrix, dtype=float),
         where=row_totals != 0,
     )
+    result_labels = np.array(
+        [
+            ["TN · Dự báo đúng", "FP · Cảnh báo nhầm"],
+            ["FN · Bỏ sót Fail", "TP · Phát hiện đúng Fail"],
+        ]
+    )
     text = np.array(
         [
             [
+                f"<b>{result_labels[row, column]}</b><br>"
                 f"{matrix[row, column]:,}<br>{row_rates[row, column]:.1%}"
                 for column in range(2)
             ]

@@ -214,6 +214,10 @@ class EvidenceContractTests(unittest.TestCase):
             "render_confusion_matrix",
             "render_threshold_decision",
             "render_discrimination_curves",
+            "TN · Dự báo đúng",
+            "FP · Cảnh báo nhầm",
+            "FN · Bỏ sót Fail",
+            "TP · Phát hiện đúng Fail",
         ):
             self.assertIn(required_element, app_source)
         self.assertNotIn("render_model_scenario_explorer", app_source)
