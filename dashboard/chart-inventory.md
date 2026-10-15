@@ -19,7 +19,7 @@ Quy tắc nghiệm thu: một biểu đồ chỉ được giữ khi nối trực
 | 13 | Diverging Bar | Tín hiệu đầu vào → nguy cơ model | Tín hiệu nào đi cùng nguy cơ `Fail` cao hơn hoặc thấp hơn? |
 | 14 | Threshold Trade-off Line | Ngưỡng phân loại ↔ Recall/Precision/F1 | Hạ hoặc tăng ngưỡng làm khả năng phát hiện và độ chính xác cảnh báo thay đổi ra sao? Vạch đứng và ba chấm giao điểm cho biết các giá trị tại ngưỡng đang thử. |
 | 15 | Confusion Matrix Heatmap | Dự báo ↔ kết quả thật | Model phát hiện, bỏ sót và cảnh báo nhầm bao nhiêu tại ngưỡng đang chọn? |
-| 16 | ROC + Precision–Recall | Khả năng phân biệt ↔ kết quả thật | Logistic Regression xếp hạng hai lớp tốt đến đâu trên mọi ngưỡng? |
+| 16 | ROC + Precision–Recall | Khả năng phân biệt ↔ kết quả thật | Logistic Regression xếp hạng hai lớp tốt đến đâu trên mọi ngưỡng? Tooltip của mỗi điểm cho biết threshold tương ứng. |
 
 Biểu đồ đã loại:
 

@@ -2032,6 +2032,12 @@ def render_discrimination_curves(selected_threshold: float) -> None:
     precision_recall = curves.loc[
         curves["curve"].eq("Precision-Recall")
     ].sort_values("x")
+    roc_threshold_labels = roc["threshold"].map(
+        lambda value: f"{float(value):.1%}" if np.isfinite(value) else "Điểm bắt đầu"
+    )
+    precision_recall_threshold_labels = precision_recall["threshold"].map(
+        lambda value: f"{float(value):.1%}" if np.isfinite(value) else "Điểm kết thúc"
+    )
 
     figure = make_subplots(
         rows=1,
@@ -2049,7 +2055,11 @@ def render_discrimination_curves(selected_threshold: float) -> None:
             name="ROC",
             mode="lines",
             line={"color": "#2563EB", "width": 3},
-            hovertemplate="False Positive Rate=%{x:.1%}<br>Recall=%{y:.1%}<extra></extra>",
+            customdata=roc_threshold_labels,
+            hovertemplate=(
+                "Ngưỡng=%{customdata}<br>Tỷ lệ cảnh báo nhầm=%{x:.1%}"
+                "<br>Tỷ lệ phát hiện Fail=%{y:.1%}<extra></extra>"
+            ),
         ),
         row=1,
         col=1,
@@ -2073,7 +2083,11 @@ def render_discrimination_curves(selected_threshold: float) -> None:
             name="Precision–Recall",
             mode="lines",
             line={"color": "#DC2626", "width": 3},
-            hovertemplate="Recall=%{x:.1%}<br>Precision=%{y:.1%}<extra></extra>",
+            customdata=precision_recall_threshold_labels,
+            hovertemplate=(
+                "Ngưỡng=%{customdata}<br>Tỷ lệ phát hiện Fail=%{x:.1%}"
+                "<br>Độ chính xác cảnh báo=%{y:.1%}<extra></extra>"
+            ),
         ),
         row=1,
         col=2,

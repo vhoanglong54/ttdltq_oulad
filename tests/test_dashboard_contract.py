@@ -166,6 +166,25 @@ class EvidenceContractTests(unittest.TestCase):
             )
         )
 
+        discrimination_traces = None
+        for chart in app.get("plotly_chart"):
+            spec = json.loads(chart.spec)
+            traces = {trace.get("name"): trace for trace in spec["data"]}
+            if {"ROC", "Precision–Recall"}.issubset(traces):
+                discrimination_traces = traces
+                break
+        self.assertIsNotNone(discrimination_traces)
+        for name in ("ROC", "Precision–Recall"):
+            trace = discrimination_traces[name]
+            self.assertGreater(len(trace["customdata"]), 1)
+            self.assertTrue(
+                all(
+                    "%" in label or label.startswith("Điểm ")
+                    for label in trace["customdata"]
+                )
+            )
+            self.assertIn("Ngưỡng=%{customdata}", trace["hovertemplate"])
+
         app.slider[0].set_value(50.0).run()
         self.assertFalse(app.exception)
         moved = selected_markers()
